@@ -502,7 +502,6 @@ UserInputService.InputEnded:Connect(function(input)
 			local duration = math.clamp(settings.LagSwitchSeconds, 0, 3)
 			if duration > 0 then
 				local endTime = tick() + duration
-				-- Tạm dừng/đóng băng toàn bộ hoạt động rendering trong khoảng thời gian chỉ định (1-3 giây)
 				while tick() < endTime do
 					local startBlock = tick()
 					while tick() - startBlock < 0.08 do
@@ -567,23 +566,73 @@ RunService.RenderStepped:Connect(function()
 		end
 	end)
 	
-	statsLabel.Text = string.format("FPS: %d | Ping: %dms\nPlayers: %d", fps, pingVal, #Players:GetPlayers())
+	statsLabel.Text = string.format(" FPS: %d | PING: %dms", fps, pingVal)
+	
+	-- Cập nhật hiển thị nút nổi theo Cài đặt
+	jumpFloatingBtn.Visible = settings.AutoJumpEnabled
+	lagSwitchFloatingBtn.Visible = settings.LagSwitchButtonActive
 	
 	jumpFloatingBtn.Size = UDim2.new(0, settings.JumpButtonWidth, 0, settings.JumpButtonHeight)
-	jumpFloatingBtn.Visible = settings.MenuVisible == false and settings.AutoJumpEnabled
-	lagSwitchFloatingBtn.Visible = settings.MenuVisible == false and settings.LagSwitchButtonActive
-
-	-- Hiệu ứng đổi màu RGB cho Menu và LED nhân vật
-	if settings.MenuRgbEnabled or settings.RgbLedEnabled then
-		local hue = (tick() % 4) / 4
-		local rainbowColor = Color3.fromHSV(hue, 1, 1)
-		
-		if settings.MenuRgbEnabled then
-			mStroke.Color = rainbowColor
-			tStroke.Color = rainbowColor
-			toggleBtn.TextColor3 = rainbowColor
-		else
-			mStroke.Color = Color3.fromRGB(50, 50, 65)
-			tStroke.Color = Color3.fromRGB(70, 70, 95)
-			toggleBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
+	lagSwitchFloatingBtn.Size = UDim2.new(0, settings.LagSwitchButtonWidth, 0, settings.LagSwitchButtonHeight)
+	
+	-- Xử lý Auto Jump tự động nhảy khi nút bật
+	if settings.AutoJumpEnabled and jumpFloatingBtn:GetAttribute("IsActive") then
+		local char = player.Character
+		if char then
+			local humanoid = char:FindFirstChildOfClass("Humanoid")
+			if humanoid and humanoid.FloorMaterial ~= Enum.Material.Air then
+				humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			end
 		end
+	end
+	
+	--- Xử lý màu sắc RGB Giao diện Menu & Viền
+	if settings.MenuRgbEnabled then
+		local hue = (tick() % 5) / 5
+		local c = Color3.fromHSV(hue, 1, 1)
+		mStroke.Color = c
+		tStroke.Color = c
+		jStroke.Color = c
+		lStroke.Color = c
+	else
+		mStroke.Color = Color3.fromRGB(50, 50, 65)
+		tStroke.Color = Color3.fromRGB(70, 70, 95)
+		jStroke.Color = Color3.fromRGB(100, 100, 120)
+		lStroke.Color = Color3.fromRGB(220, 140, 40)
+	end
+	
+	-- Xử lý RGB LED Nhân vật
+	updateRgbLed()
+	
+	-- Xử lý tính năng AFK Farm TP trên không
+	if settings.AfkFarmSky then
+		updateAfkPlatform(true)
+		local char = player.Character
+		if char then
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if root and afkPlatform then
+				root.CFrame = afkPlatform.CFrame + Vector3.new(0, 4, 0)
+				root.AssemblyLinearVelocity = Vector3.zero
+			end
+		end
+	else
+		updateAfkPlatform(false)
+	end
+	
+	-- Xử lý Tự động thu thập bong bóng (Auto Collect Bubbles)
+	if settings.AutoCollectBubbles then
+		pcall(function()
+			local char = player.Character
+			if char then
+				local root = char:FindFirstChild("HumanoidRootPart")
+				if root then
+					for _, bubble in ipairs(getBubbles()) do
+						if bubble:IsA("BasePart") and (bubble.Position - root.Position).Magnitude < 30 then
+							bubble.CFrame = root.CFrame
+						end
+					end
+				end
+			end
+		end)
+	end
+end)
