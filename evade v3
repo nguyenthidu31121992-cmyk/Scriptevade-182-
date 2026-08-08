@@ -1,0 +1,589 @@
+--!strict
+--[[
+    NEW SCRIPT V2 (Optimized + Custom AFK Platform + Independent Jump + Configurable Lag Switch Freezing + Menu RGB UI + Rainbow RGB LED + Anti-Lag Boost)
+    Created by: KÊNH TIK TOK script new
+--]]
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local TeleportService = game:GetService("TeleportService")
+local VirtualUser = game:GetService("VirtualUser")
+local Lighting = game:GetService("Lighting")
+
+local player = Players.LocalPlayer
+
+local settings = {
+	MenuVisible = true,
+	AutoJumpEnabled = false,
+	JumpButtonActive = false,
+	LagSwitchButtonActive = false,
+	LagSwitchSeconds = 1, -- Số giây khựng màn hình (0 - 3 giây)
+	RgbLedEnabled = false,
+	MenuRgbEnabled = true, -- Đổi màu RGB cho viền Menu và các nút bấm chính
+	AntiLagEnabled = false, -- Tính năng Fix Lag tăng FPS / Giảm đồ họa
+	AutoCollectBubbles = false,
+	AfkFarmSky = false,
+	AntiAfkEnabled = true,
+	JumpButtonWidth = 140,
+	JumpButtonHeight = 45,
+	LagSwitchButtonWidth = 160,
+	LagSwitchButtonHeight = 45,
+}
+
+if CoreGui:FindFirstChild("NewScriptV2_Gui") then
+	CoreGui.NewScriptV2_Gui:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NewScriptV2_Gui"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+task.spawn(function()
+	player.Idled:Connect(function()
+		if settings.AntiAfkEnabled then
+			VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+			task.wait(1)
+			VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+		end
+	end)
+end)
+
+local afkPlatform: Part? = nil
+local function updateAfkPlatform(create: boolean)
+	if create then
+		if not afkPlatform or not afkPlatform.Parent then
+			afkPlatform = Instance.new("Part")
+			afkPlatform.Name = "NewScriptV2_AFKPlatform"
+			afkPlatform.Size = Vector3.new(10, 1, 10)
+			afkPlatform.Anchored = true
+			afkPlatform.CanCollide = true
+			afkPlatform.Transparency = 0.3
+			afkPlatform.Color = Color3.fromRGB(40, 40, 50)
+			afkPlatform.Material = Enum.Material.SmoothPlastic
+			afkPlatform.Parent = workspace
+		end
+		local char = player.Character
+		if char then
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if root and afkPlatform then
+				afkPlatform.CFrame = root.CFrame - Vector3.new(0, 4, 0)
+			end
+		end
+	else
+		if afkPlatform then
+			afkPlatform:Destroy()
+			afkPlatform = nil
+		end
+	end
+end
+
+-- Hệ thống RGB LED đổi màu cầu vồng cho nhân vật
+local function updateRgbLed()
+	if settings.RgbLedEnabled then
+		local char = player.Character
+		if char then
+			local hue = (tick() % 5) / 5
+			local rainbowColor = Color3.fromHSV(hue, 1, 1)
+			local highlight = char:FindFirstChild("NewScriptV2_RGB_LED")
+			if not highlight then
+				highlight = Instance.new("Highlight")
+				highlight.Name = "NewScriptV2_RGB_LED"
+				highlight.Adornee = char
+				highlight.FillTransparency = 0.5
+				highlight.OutlineTransparency = 0
+				highlight.Parent = char
+			end
+			highlight.FillColor = rainbowColor
+			highlight.OutlineColor = rainbowColor
+		end
+	else
+		local char = player.Character
+		if char then
+			local highlight = char:FindFirstChild("NewScriptV2_RGB_LED")
+			if highlight then highlight:Destroy() end
+		end
+	end
+end
+
+-- Tính năng Fix Lag tăng cường FPS (Tối ưu hóa Lighting & Workspace)
+local function applyAntiLag(enable: boolean)
+	if enable then
+		pcall(function()
+			Lighting.GlobalShadows = false
+			Lighting.FogEnd = 9e9
+			for _, v in ipairs(workspace:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Material = Enum.Material.SmoothPlastic
+					v.Reflectance = 0
+				elseif v:IsA("Decal") or v:IsA("Texture") then
+					v.Transparency = 1
+				end
+			end
+		end)
+	end
+end
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 360, 0, 410)
+mainFrame.Position = UDim2.new(0.5, -180, 0.5, -205)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+mainFrame.BackgroundTransparency = 0.05
+mainFrame.ClipsDescendants = true
+mainFrame.Visible = settings.MenuVisible
+mainFrame.Parent = screenGui
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
+local mStroke = Instance.new("UIStroke", mainFrame)
+mStroke.Thickness = 1.5
+mStroke.Color = Color3.fromRGB(50, 50, 65)
+
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 160, 0, 35)
+toggleBtn.Position = UDim2.new(0, 20, 0, 20)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
+toggleBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
+toggleBtn.TextSize = 11
+toggleBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+toggleBtn.Text = "NEW SCRIPT V2"
+toggleBtn.Parent = screenGui
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 6)
+local tStroke = Instance.new("UIStroke", toggleBtn)
+tStroke.Thickness = 1
+tStroke.Color = Color3.fromRGB(70, 70, 95)
+
+local toggleActiveInput: InputObject? = nil
+local toggleDragStart = Vector2.zero
+local toggleStartPos = UDim2.new()
+local toggleHasMoved = false
+
+toggleBtn.InputBegan:Connect(function(input)
+	if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not toggleActiveInput then
+		toggleActiveInput = input
+		toggleDragStart = input.Position
+		toggleStartPos = toggleBtn.Position
+		toggleHasMoved = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == toggleActiveInput then
+		local delta = input.Position - toggleDragStart
+		if delta.Magnitude > 6 then
+			toggleHasMoved = true
+		end
+		toggleBtn.Position = UDim2.new(toggleStartPos.X.Scale, toggleStartPos.X.Offset + delta.X, toggleStartPos.Y.Scale, toggleStartPos.Y.Offset + delta.Y)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input == toggleActiveInput then
+		if not toggleHasMoved then
+			settings.MenuVisible = not settings.MenuVisible
+			mainFrame.Visible = settings.MenuVisible
+		end
+		toggleActiveInput = nil
+	end
+end)
+
+local titleBar = Instance.new("TextLabel")
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundTransparency = 1
+titleBar.Text = "  NEW SCRIPT V2 - MENU CHÍNH"
+titleBar.TextColor3 = Color3.fromRGB(210, 210, 220)
+titleBar.TextSize = 11
+titleBar.TextXAlignment = Enum.TextXAlignment.Left
+titleBar.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+titleBar.ZIndex = 2
+titleBar.Parent = mainFrame
+
+local menuActiveInput: InputObject? = nil
+local menuDragStart = Vector2.zero
+local menuStartPos = UDim2.new()
+
+titleBar.InputBegan:Connect(function(input)
+	if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not menuActiveInput then
+		menuActiveInput = input
+		menuDragStart = input.Position
+		menuStartPos = mainFrame.Position
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == menuActiveInput then
+		local delta = input.Position - menuDragStart
+		mainFrame.Position = UDim2.new(menuStartPos.X.Scale, menuStartPos.X.Offset + delta.X, menuStartPos.Y.Scale, menuStartPos.Y.Offset + delta.Y)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input == menuActiveInput then
+		menuActiveInput = nil
+	end
+end)
+
+local scrollContainer = Instance.new("ScrollingFrame")
+scrollContainer.Size = UDim2.new(1, -16, 1, -75)
+scrollContainer.Position = UDim2.new(0, 8, 0, 38)
+scrollContainer.BackgroundTransparency = 1
+scrollContainer.CanvasSize = UDim2.new(0, 0, 0, 420)
+scrollContainer.ScrollBarThickness = 3
+scrollContainer.ZIndex = 2
+scrollContainer.Parent = mainFrame
+
+local function createToggle(posY, text, stateVar)
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -10, 0, 34)
+	frame.Position = UDim2.new(0, 5, 0, posY)
+	frame.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
+	frame.ZIndex = 3
+	frame.Parent = scrollContainer
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0, 190, 1, 0)
+	label.Position = UDim2.new(0, 10, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(200, 200, 210)
+	label.TextSize = 10
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+	label.ZIndex = 3
+	label.Parent = frame
+
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 44, 0, 22)
+	btn.Position = UDim2.new(1, -54, 0.5, -11)
+	btn.BackgroundColor3 = settings[stateVar] and Color3.fromRGB(40, 160, 90) or Color3.fromRGB(40, 40, 50)
+	btn.Text = ""
+	btn.ZIndex = 4
+	btn.Parent = frame
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+	
+	local indicator = Instance.new("Frame")
+	indicator.Size = UDim2.new(0, 14, 0, 14)
+	indicator.Position = settings[stateVar] and UDim2.new(1, -18, 0, 4) or UDim2.new(0, 4, 0, 4)
+	indicator.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+	indicator.ZIndex = 5
+	indicator.Parent = btn
+	Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
+
+	btn.MouseButton1Click:Connect(function()
+		settings[stateVar] = not settings[stateVar]
+		local val = settings[stateVar]
+		if val then
+			btn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
+			indicator.Position = UDim2.new(1, -18, 0, 4)
+		else
+			btn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+			indicator.Position = UDim2.new(0, 4, 0, 4)
+		end
+		
+		if stateVar == "AfkFarmSky" and not val then
+			updateAfkPlatform(false)
+		end
+		if stateVar == "RgbLedEnabled" and not val then
+			updateRgbLed()
+		end
+		if stateVar == "AntiLagEnabled" then
+			applyAntiLag(val)
+		end
+	end)
+end
+
+local function createSizeInput(posY, text, defaultVal, minVal, maxVal, callback)
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -10, 0, 34)
+	frame.Position = UDim2.new(0, 5, 0, posY)
+	frame.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
+	frame.ZIndex = 3
+	frame.Parent = scrollContainer
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0, 180, 1, 0)
+	label.Position = UDim2.new(0, 10, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(200, 200, 210)
+	label.TextSize = 10
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+	label.ZIndex = 3
+	label.Parent = frame
+
+	local box = Instance.new("TextBox")
+	box.Size = UDim2.new(0, 60, 0, 22)
+	box.Position = UDim2.new(1, -70, 0.5, -11)
+	box.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+	box.Text = tostring(defaultVal)
+	box.TextColor3 = Color3.fromRGB(230, 230, 230)
+	box.TextSize = 10
+	box.FontFace = Font.new("rbxasset://fonts/families/GothamMedium.json")
+	box.ZIndex = 4
+	box.Parent = frame
+	Instance.new("UICorner", box).CornerRadius = UDim.new(0, 4)
+
+	box.FocusLost:Connect(function()
+		local num = tonumber(box.Text)
+		if num and num >= minVal and num <= maxVal then
+			callback(num)
+		else
+			box.Text = tostring(defaultVal)
+		end
+	end)
+end
+
+createToggle(0, "⚡ Auto Jump (Hiện nút)", "AutoJumpEnabled")
+createToggle(38, "⚡ Lag Switch (Hiện nút)", "LagSwitchButtonActive")
+createToggle(76, "🌈 RPG LED Đổi Màu", "RgbLedEnabled")
+createToggle(114, "✨ Menu RGB Đổi Màu", "MenuRgbEnabled")
+createToggle(152, "🚀 Fix Lag Tăng FPS", "AntiLagEnabled")
+createToggle(190, "🧲 Auto Collect Bubbles", "AutoCollectBubbles")
+createToggle(228, "🚀 AFK Farm TP 1500m + Khối", "AfkFarmSky")
+createToggle(266, "🛡️ Anti-AFK", "AntiAfkEnabled")
+
+createSizeInput(304, "⏱️ Giây Khựng Lag (0-3s)", settings.LagSwitchSeconds, 0, 3, function(val)
+	settings.LagSwitchSeconds = val
+end)
+
+createSizeInput(342, "📏 Dài nút nhảy", settings.JumpButtonWidth, 50, 300, function(val)
+	settings.JumpButtonWidth = val
+end)
+
+local actionFrame = Instance.new("Frame")
+actionFrame.Size = UDim2.new(1, -10, 0, 35)
+actionFrame.Position = UDim2.new(0, 5, 0, 380)
+actionFrame.BackgroundTransparency = 1
+actionFrame.ZIndex = 3
+actionFrame.Parent = scrollContainer
+
+local rejoinBtn = Instance.new("TextButton")
+rejoinBtn.Size = UDim2.new(1, 0, 1, 0)
+rejoinBtn.Position = UDim2.new(0, 0, 0, 0)
+rejoinBtn.BackgroundColor3 = Color3.fromRGB(40, 90, 160)
+rejoinBtn.Text = "🔄 REJOIN / SERVER"
+rejoinBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
+rejoinBtn.TextSize = 9
+rejoinBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+rejoinBtn.ZIndex = 4
+rejoinBtn.Parent = actionFrame
+Instance.new("UICorner", rejoinBtn).CornerRadius = UDim.new(0, 6)
+
+rejoinBtn.MouseButton1Click:Connect(function()
+	pcall(function()
+		TeleportService:Teleport(game.PlaceId, player)
+	end)
+end)
+
+local creditLabel = Instance.new("TextLabel")
+creditLabel.Size = UDim2.new(1, 0, 0, 30)
+creditLabel.Position = UDim2.new(0, 0, 1, -30)
+creditLabel.BackgroundTransparency = 1
+creditLabel.Text = "Cre: KÊNH TIK TOK script new | 17+"
+creditLabel.TextColor3 = Color3.fromRGB(130, 130, 145)
+creditLabel.TextSize = 9
+creditLabel.FontFace = Font.new("rbxasset://fonts/families/GothamMedium.json")
+creditLabel.ZIndex = 3
+creditLabel.Parent = mainFrame
+
+-- Nút nhảy độc lập ngoài màn hình
+local jumpFloatingBtn = Instance.new("TextButton")
+jumpFloatingBtn.Size = UDim2.new(0, settings.JumpButtonWidth, 0, settings.JumpButtonHeight)
+jumpFloatingBtn.Position = UDim2.new(0.75, 0, 0.55, 0)
+jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+jumpFloatingBtn.Text = "AUTO JUMP: OFF"
+jumpFloatingBtn.TextSize = 10
+jumpFloatingBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+jumpFloatingBtn.Visible = false
+jumpFloatingBtn.ZIndex = 20
+jumpFloatingBtn.Parent = screenGui
+Instance.new("UICorner", jumpFloatingBtn).CornerRadius = UDim.new(0, 8)
+local jStroke = Instance.new("UIStroke", jumpFloatingBtn)
+jStroke.Thickness = 1.5
+jStroke.Color = Color3.fromRGB(100, 100, 120)
+
+local jumpActiveInput: InputObject? = nil
+local jumpDragStart = Vector2.zero
+local jumpStartPos = UDim2.new()
+local jumpHasMoved = false
+
+jumpFloatingBtn.InputBegan:Connect(function(input)
+	if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not jumpActiveInput then
+		jumpActiveInput = input
+		jumpDragStart = input.Position
+		jumpStartPos = jumpFloatingBtn.Position
+		jumpHasMoved = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == jumpActiveInput then
+		local delta = input.Position - jumpDragStart
+		if delta.Magnitude > 5 then
+			jumpHasMoved = true
+		end
+		jumpFloatingBtn.Position = UDim2.new(jumpStartPos.X.Scale, jumpStartPos.X.Offset + delta.X, jumpStartPos.Y.Scale, jumpStartPos.Y.Offset + delta.Y)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input == jumpActiveInput then
+		if not jumpHasMoved then
+			local activeState = not jumpFloatingBtn:GetAttribute("IsActive")
+			jumpFloatingBtn:SetAttribute("IsActive", activeState)
+			if activeState then
+				jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
+				jumpFloatingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+				jumpFloatingBtn.Text = "AUTO JUMP: ON"
+			else
+				jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+				jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+				jumpFloatingBtn.Text = "AUTO JUMP: OFF"
+			end
+		end
+		jumpActiveInput = nil
+	end
+end)
+
+-- Nút Lag Switch khựng màn hình độc lập ngoài màn hình
+local lagSwitchFloatingBtn = Instance.new("TextButton")
+lagSwitchFloatingBtn.Size = UDim2.new(0, settings.LagSwitchButtonWidth, 0, settings.LagSwitchButtonHeight)
+lagSwitchFloatingBtn.Position = UDim2.new(0.5, -80, 0.55, 0)
+lagSwitchFloatingBtn.BackgroundColor3 = Color3.fromRGB(160, 90, 20)
+lagSwitchFloatingBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
+lagSwitchFloatingBtn.Text = "LAG SWITCH"
+lagSwitchFloatingBtn.TextSize = 10
+lagSwitchFloatingBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+lagSwitchFloatingBtn.Visible = false
+lagSwitchFloatingBtn.ZIndex = 20
+lagSwitchFloatingBtn.Parent = screenGui
+Instance.new("UICorner", lagSwitchFloatingBtn).CornerRadius = UDim.new(0, 8)
+local lStroke = Instance.new("UIStroke", lagSwitchFloatingBtn)
+lStroke.Thickness = 1.5
+lStroke.Color = Color3.fromRGB(220, 140, 40)
+
+local lagActiveInput: InputObject? = nil
+local lagDragStart = Vector2.zero
+local lagStartPos = UDim2.new()
+local lagHasMoved = false
+local isLagging = false
+
+lagSwitchFloatingBtn.InputBegan:Connect(function(input)
+	if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not lagActiveInput then
+		lagActiveInput = input
+		lagDragStart = input.Position
+		lagStartPos = lagSwitchFloatingBtn.Position
+		lagHasMoved = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == lagActiveInput then
+		local delta = input.Position - lagDragStart
+		if delta.Magnitude > 5 then
+			lagHasMoved = true
+		end
+		lagSwitchFloatingBtn.Position = UDim2.new(lagStartPos.X.Scale, lagStartPos.X.Offset + delta.X, lagStartPos.Y.Scale, lagStartPos.Y.Offset + delta.Y)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input == lagActiveInput then
+		if not lagHasMoved and not isLagging then
+			isLagging = true
+			lagSwitchFloatingBtn.BackgroundColor3 = Color3.fromRGB(100, 40, 10)
+			lagSwitchFloatingBtn.Text = "FREEZING..."
+			
+			local duration = math.clamp(settings.LagSwitchSeconds, 0, 3)
+			if duration > 0 then
+				local endTime = tick() + duration
+				-- Tạm dừng/đóng băng toàn bộ hoạt động rendering trong khoảng thời gian chỉ định (1-3 giây)
+				while tick() < endTime do
+					local startBlock = tick()
+					while tick() - startBlock < 0.08 do
+						math.sqrt(math.random(1, 2000000))
+					end
+					task.wait()
+				end
+			end
+			
+			lagSwitchFloatingBtn.BackgroundColor3 = Color3.fromRGB(160, 90, 20)
+			lagSwitchFloatingBtn.Text = "LAG SWITCH"
+			isLagging = false
+		end
+		lagActiveInput = nil
+	end
+end)
+
+local statsLabel = Instance.new("TextLabel")
+statsLabel.Size = UDim2.new(0, 140, 0, 34)
+statsLabel.Position = UDim2.new(1, -150, 0, 20)
+statsLabel.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+statsLabel.TextColor3 = Color3.fromRGB(40, 220, 110)
+statsLabel.TextSize = 9
+statsLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+statsLabel.ZIndex = 10
+statsLabel.Parent = screenGui
+Instance.new("UICorner", statsLabel).CornerRadius = UDim.new(0, 6)
+
+local lastTick = tick()
+local frameCount = 0
+local fps = 60
+
+local function getBubbles()
+	local bubblesList = {}
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and (string.find(string.lower(obj.Name), "bubble") or string.find(string.lower(obj.Name), "bong")) then
+			table.insert(bubblesList, obj)
+		end
+	end
+	return bubblesList
+end
+
+RunService.RenderStepped:Connect(function()
+	frameCount += 1
+	if tick() - lastTick >= 1 then
+		fps = frameCount
+		frameCount = 0
+		lastTick = tick()
+	end
+	
+	local pingVal = 0
+	pcall(function()
+		local network = game:GetService("Stats").Network
+		if network then
+			local statsItem = network:FindFirstChild("ServerStatsItem")
+			if statsItem then
+				local pingItem = statsItem:FindFirstChild("Data Ping")
+				if pingItem then
+					pingVal = math.floor(pingItem:GetValue())
+				end
+			end
+		end
+	end)
+	
+	statsLabel.Text = string.format("FPS: %d | Ping: %dms\nPlayers: %d", fps, pingVal, #Players:GetPlayers())
+	
+	jumpFloatingBtn.Size = UDim2.new(0, settings.JumpButtonWidth, 0, settings.JumpButtonHeight)
+	jumpFloatingBtn.Visible = settings.MenuVisible == false and settings.AutoJumpEnabled
+	lagSwitchFloatingBtn.Visible = settings.MenuVisible == false and settings.LagSwitchButtonActive
+
+	-- Hiệu ứng đổi màu RGB cho Menu và LED nhân vật
+	if settings.MenuRgbEnabled or settings.RgbLedEnabled then
+		local hue = (tick() % 4) / 4
+		local rainbowColor = Color3.fromHSV(hue, 1, 1)
+		
+		if settings.MenuRgbEnabled then
+			mStroke.Color = rainbowColor
+			tStroke.Color = rainbowColor
+			toggleBtn.TextColor3 = rainbowColor
+		else
+			mStroke.Color = Color3.fromRGB(50, 50, 65)
+			tStroke.Color = Color3.fromRGB(70, 70, 95)
+			toggleBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
+		end
