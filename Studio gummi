@@ -1,0 +1,288 @@
+--!strict
+--[[
+    UNIVERSAL ANIMATION CODE STUDIO (Mobile & Delta Edition v2.4)
+    Features: Unlimited Code IDE, Floating Toggle, Local Character Cloner (UserId)
+--]]
+
+local Players = game:GetService("Players")
+local TextService = game:GetService("TextService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+local STUDIO_CONFIG = {
+    HubName = "Animation Code Studio",
+    Version = "2.4.0"
+}
+
+local function createMobileCodeStudioUI()
+    local THEME = {
+        bg       = Color3.fromRGB(15, 16, 22),
+        surface  = Color3.fromRGB(22, 24, 32),
+        surface2 = Color3.fromRGB(28, 31, 42),
+        stroke   = Color3.fromRGB(45, 48, 65),
+        text     = Color3.fromRGB(235, 238, 245),
+        subtext  = Color3.fromRGB(130, 135, 155),
+        success  = Color3.fromRGB(70, 210, 110),
+        danger   = Color3.fromRGB(235, 75, 90),
+        codebg   = Color3.fromRGB(10, 11, 16),
+        codetext = Color3.fromRGB(80, 250, 123),
+        accent   = Color3.fromRGB(110, 80, 255),
+        primary  = Color3.fromRGB(50, 150, 255),
+    }
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "AnimationCodeStudioMobile"
+    ScreenGui.DisplayOrder = 999
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.IgnoreGuiInset = true
+    ScreenGui.Parent = PlayerGui
+
+    local function corner(parent, radius)
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, radius or 8)
+        c.Parent = parent
+    end
+
+    local function stroke(parent, color)
+        local s = Instance.new("UIStroke")
+        s.Color = color or THEME.stroke
+        s.Thickness = 1
+        s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        s.Parent = parent
+    end
+
+    -- 1. Nút mở/đóng nổi trên màn hình (Floating Toggle Button)
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Name = "ToggleFloatingButton"
+    ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+    ToggleBtn.Position = UDim2.new(0, 20, 0.4, 0)
+    ToggleBtn.BackgroundColor3 = THEME.accent
+    ToggleBtn.Text = "🎬"
+    ToggleBtn.TextSize = 22
+    ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleBtn.Font = Enum.Font.GothamBold
+    ToggleBtn.Parent = ScreenGui
+    corner(ToggleBtn, 25)
+    stroke(ToggleBtn)
+
+    -- 2. Khung giao diện chính (Main IDE Window)
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 340, 0, 440) -- Mở rộng chiều cao để chứa ô nhập ID nhân vật
+    MainFrame.Position = UDim2.new(0.5, -170, 0.5, -220)
+    MainFrame.BackgroundColor3 = THEME.bg
+    MainFrame.Visible = true
+    MainFrame.Parent = ScreenGui
+    corner(MainFrame, 12)
+    stroke(MainFrame)
+
+    ToggleBtn.MouseButton1Click:Connect(function()
+        MainFrame.Visible = not MainFrame.Visible
+    end)
+
+    -- Header
+    local Header = Instance.new("Frame")
+    Header.Size = UDim2.new(1, 0, 0, 38)
+    Header.BackgroundTransparency = 1
+    Header.Parent = MainFrame
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -20, 1, 0)
+    Title.Position = UDim2.new(0, 12, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = STUDIO_CONFIG.HubName .. " (Cloner)"
+    Title.TextColor3 = THEME.text
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 12
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Header
+
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+    CloseBtn.Position = UDim2.new(1, -30, 0.5, -12)
+    CloseBtn.BackgroundColor3 = THEME.surface
+    CloseBtn.Text = "X"
+    CloseBtn.TextColor3 = THEME.subtext
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.TextSize = 10
+    CloseBtn.Parent = Header
+    corner(CloseBtn, 6)
+    stroke(CloseBtn)
+
+    CloseBtn.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
+
+    -- 3. Phần nhập UserID để tạo nhân vật mẫu cục bộ (Local Model Spawner)
+    local SpawnerBoxContainer = Instance.new("Frame")
+    SpawnerBoxContainer.Size = UDim2.new(1, -20, 0, 36)
+    SpawnerBoxContainer.Position = UDim2.new(0, 10, 0, 42)
+    SpawnerBoxContainer.BackgroundColor3 = THEME.surface
+    SpawnerBoxContainer.Parent = MainFrame
+    corner(SpawnerBoxContainer, 6)
+    stroke(SpawnerBoxContainer)
+
+    local UserIdInput = Instance.new("TextBox")
+    UserIdInput.Size = UDim2.new(0.65, 0, 1, 0)
+    UserIdInput.Position = UDim2.new(0, 8, 0, 0)
+    UserIdInput.BackgroundTransparency = 1
+    UserIdInput.PlaceholderText = "Nhập Roblox UserId..."
+    UserIdInput.Text = ""
+    UserIdInput.TextColor3 = THEME.text
+    UserIdInput.PlaceholderColor3 = THEME.subtext
+    UserIdInput.Font = Enum.Font.GothamMedium
+    UserIdInput.TextSize = 11
+    UserIdInput.ClearTextOnFocus = false
+    UserIdInput.Parent = SpawnerBoxContainer
+
+    local SpawnBtn = Instance.new("TextButton")
+    SpawnBtn.Size = UDim2.new(0.32, 0, 0.8, 0)
+    SpawnBtn.Position = UDim2.new(0.67, 0, 0.1, 0)
+    SpawnBtn.BackgroundColor3 = THEME.primary
+    SpawnBtn.Text = "Tạo Nhân Vật"
+    SpawnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SpawnBtn.Font = Enum.Font.GothamBold
+    SpawnBtn.TextSize = 10
+    SpawnBtn.Parent = SpawnerBoxContainer
+    corner(SpawnBtn, 5)
+
+    -- Xử lý tạo nhân vật bằng UserId (Chỉ hiển thị cục bộ trên máy của bạn)
+    SpawnBtn.MouseButton1Click:Connect(function()
+        local userId = tonumber(UserIdInput.Text)
+        if userId then
+            task.spawn(function()
+                local success, model = pcall(function()
+                    return Players:CreateHumanoidModelFromUserId(userId)
+                end)
+                if success and model then
+                    -- Đặt vị trí xuất hiện ngay trước mặt nhân vật của bạn
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        model:SetPrimaryPartCFrame(char.HumanoidRootPart.CFrame + (char.HumanoidRootPart.Cfraem and char.HumanoidRootPart.CFrame.LookVector * 5 or CFrame.new(0,0,-5)))
+                    else
+                        model.PrimaryPart = model:FindFirstChild("HumanoidRootPart") or model:FindFirstChild("Torso")
+                        if model.PrimaryPart then
+                            model:SetPrimaryPartCFrame(CFrame.new(0, 5, 0))
+                        end
+                    end
+                    -- Đưa vào Workspace để chỉ hiển thị cục bộ (hoặc Workspace tùy biến)
+                    model.Parent = workspace
+                    UserIdInput.Text = "Tạo thành công!"
+                    task.wait(1.5)
+                    UserIdInput.Text = tostring(userId)
+                else
+                    UserIdInput.Text = "ID Không hợp lệ!"
+                    task.wait(1.5)
+                    UserIdInput.Text = ""
+                end
+            end)
+        else
+            UserIdInput.Text = "Vui lòng nhập số ID!"
+            task.wait(1.5)
+            UserIdInput.Text = ""
+        end
+    end)
+
+    -- 4. Khu vực soạn thảo Code không giới hạn ký tự
+    local EditorFrame = Instance.new("ScrollingFrame")
+    EditorFrame.Size = UDim2.new(1, -20, 1, -140)
+    EditorFrame.Position = UDim2.new(0, 10, 0, 85)
+    EditorFrame.BackgroundColor3 = THEME.codebg
+    EditorFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    EditorFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    EditorFrame.ScrollBarThickness = 4
+    EditorFrame.Parent = MainFrame
+    corner(EditorFrame, 8)
+    stroke(EditorFrame)
+
+    local CodeInput = Instance.new("TextBox")
+    CodeInput.Size = UDim2.new(1, -10, 1, 0)
+    CodeInput.Position = UDim2.new(0, 5, 0, 0)
+    CodeInput.BackgroundTransparency = 1
+    CodeInput.Text = [[-- Nhập ID nhân vật ở trên và bấm "Tạo Nhân Vật"
+-- Viết code code animation để test trên nhân vật mẫu tại đây:
+
+local char = workspace:FindFirstChild("Model") -- Model nhân vật vừa tạo
+if char and char:FindFirstChild("Right Arm") then
+    local arm = char["Right Arm"]
+    for i = 1, 30 do
+        arm.CFrame = arm.CFrame * CFrame.Angles(math.rad(5), 0, 0)
+        task.wait(0.03)
+    end
+end]]
+    CodeInput.TextColor3 = THEME.codetext
+    CodeInput.FontFace = Font.new("rbxasset://fonts/families/CodeNewRoman.json", Enum.FontWeight.Regular, Enum.FontStyle.Normal)
+    CodeInput.TextSize = 12
+    CodeInput.ClearTextOnFocus = false
+    CodeInput.MultiLine = true
+    CodeInput.TextWrapped = true
+    CodeInput.TextXAlignment = Enum.TextXAlignment.Left
+    CodeInput.TextYAlignment = Enum.TextYAlignment.Top
+    CodeInput.Parent = EditorFrame
+
+    CodeInput:GetPropertyChangedSignal("Text"):Connect(function()
+        local bounds = TextService:GetTextSize(
+            CodeInput.Text,
+            CodeInput.TextSize,
+            CodeInput.FontFace,
+            Vector2.new(EditorFrame.AbsoluteSize.X - 20, math.huge)
+        )
+        CodeInput.Size = UDim2.new(1, -10, 0, math.max(EditorFrame.AbsoluteSize.Y - 10, bounds.Y + 30))
+    end)
+
+    -- 5. Thanh công cụ bên dưới (Toolbar)
+    local Toolbar = Instance.new("Frame")
+    Toolbar.Size = UDim2.new(1, -20, 0, 36)
+    Toolbar.Position = UDim2.new(0, 10, 1, -44)
+    Toolbar.BackgroundTransparency = 1
+    Toolbar.Parent = MainFrame
+
+    local function createToolButton(name, color, sizeX, posX, callback)
+        local btn = Instance.new("TextButton")
+        btn.Size = sizeX
+        btn.Position = posX
+        btn.BackgroundColor3 = color
+        btn.Text = name
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 11
+        btn.Parent = Toolbar
+        corner(btn, 6)
+
+        btn.MouseButton1Click:Connect(callback)
+    end
+
+    createToolButton("▶ Chạy", THEME.success, UDim2.new(0.32, -4, 1, 0), UDim2.new(0, 0, 0, 0), function()
+        local sourceCode = CodeInput.Text
+        local fn, err = loadstring(sourceCode)
+        if fn then
+            task.spawn(function()
+                local success, runtimeErr = pcall(fn)
+                if not success then
+                    warn("Runtime Error: " .. tostring(runtimeErr))
+                end
+            end)
+        else
+            warn("Syntax Error: " .. tostring(err))
+        end
+    end)
+
+    createToolButton("🗑 Xóa", THEME.surface2, UDim2.new(0.32, -4, 1, 0), UDim2.new(0.33, 0, 0, 0), function()
+        CodeInput.Text = ""
+    end)
+
+    createToolButton("⏹ Dừng", THEME.danger, UDim2.new(0.32, -4, 1, 0), UDim2.new(0.66, 0, 0, 0), function()
+        local char = LocalPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+                    track:Stop()
+                end
+            end
+        end
+    end)
+end
+
+createMobileCodeStudioUI()
