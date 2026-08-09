@@ -1,7 +1,6 @@
 --!strict
 --[[
-    NEW SCRIPT V3.8 (Evade Script Ultimate - Direct Speed Override & Counter Sync)
-    Created by: KÊNH TIK TOK script new
+    NEW SCRIPT V4.7 (Ultra Next-Gen 4K-8K PC-Level Sharder, 3-Tier Fix Lag & Custom Music)
 --]]
 
 local Players = game:GetService("Players")
@@ -10,34 +9,37 @@ local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
+local SoundService = game:GetService("SoundService")
 
 local player = Players.LocalPlayer
 
 local settings = {
 	MenuVisible = true,
 	MenuMinimized = false,
-	TrimpEnabled = false,
 	AutoJumpEnabled = false,
 	LagSwitchActive = false,
 	LagSwitchSeconds = 1,
 	RgbLedEnabled = false,
 	MenuRgbEnabled = true,
-	AntiLagEnabled = false,
 	AutoCollectBubbles = false,
 	AfkFarmSky = false,
 	AntiAfkEnabled = true,
 	LockButtons = false,
-	SpeedOverrideValue = 100, -- Đồng bộ trực tiếp giá trị vào bộ đếm vàng góc màn hình (Vượt giới hạn 55)
+	EspPlayersEnabled = false,
+	UltraShaderEnabled = false,
+	FixLagMode = "Off",
+	CustomMusicEnabled = false,
+	CustomMusicId = 0,
 	JumpButtonWidth = 140,
 	JumpButtonHeight = 45,
 }
 
-if CoreGui:FindFirstChild("NewScriptV3_Gui") then
-	CoreGui.NewScriptV3_Gui:Destroy()
+if CoreGui:FindFirstChild("NewScriptV47_Gui") then
+	CoreGui.NewScriptV47_Gui:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "NewScriptV3_Gui"
+screenGui.Name = "NewScriptV47_Gui"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
 screenGui.Parent = player:WaitForChild("PlayerGui")
@@ -58,7 +60,7 @@ local function updateAfkPlatform(create: boolean)
 	if create then
 		if not afkPlatform or not afkPlatform.Parent then
 			afkPlatform = Instance.new("Part")
-			afkPlatform.Name = "NewScriptV3_AFKPlatform"
+			afkPlatform.Name = "NewScriptV47_AFKPlatform"
 			afkPlatform.Size = Vector3.new(12, 1, 12)
 			afkPlatform.Anchored = true
 			afkPlatform.CanCollide = true
@@ -81,16 +83,213 @@ local function updateAfkPlatform(create: boolean)
 	end
 end
 
+-- Hiệu ứng Sharder Đẳng Cấp PC (Ultra Next-Gen 4K-8K Shader)
+local pcAtmosphere: Atmosphere? = nil
+local pcBloom: BloomEffect? = nil
+local pcSunRays: SunRaysEffect? = nil
+local pcColorCorrection: ColorCorrectionEffect? = nil
+local pcDepthOfField: DepthOfFieldEffect? = nil
+local pcSky: Sky? = nil
+
+local function applyPCShader(enable: boolean)
+	if enable then
+		pcall(function()
+			Lighting.GlobalShadows = true
+			Lighting.Technology = Enum.Technology.Future
+			Lighting.EnvironmentDiffuseScale = 1.5
+			Lighting.EnvironmentSpecularScale = 1.5
+			Lighting.OutdoorAmbient = Color3.fromRGB(70, 80, 100)
+			Lighting.Ambient = Color3.fromRGB(30, 35, 45)
+			Lighting.Brightness = 2.2
+			Lighting.ClockTime = 14.5 -- Ánh sáng chiều hoàng hôn/trưa cực đẹp chi tiết cao
+			
+			if not pcAtmosphere then
+				pcAtmosphere = Instance.new("Atmosphere")
+				pcAtmosphere.Name = "NewScriptV47_PCAtmosphere"
+				pcAtmosphere.Density = 0.38
+				pcAtmosphere.Offset = 0.15
+				pcAtmosphere.Color = Color3.fromRGB(190, 210, 245)
+				pcAtmosphere.Decay = Color3.fromRGB(60, 70, 100)
+				pcAtmosphere.Glare = 0.6
+				pcAtmosphere.Haze = 1.8
+				pcAtmosphere.Parent = Lighting
+			end
+			
+			if not pcBloom then
+				pcBloom = Instance.new("BloomEffect")
+				pcBloom.Name = "NewScriptV47_PCBloom"
+				pcBloom.Intensity = 0.85
+				pcBloom.Size = 40
+				pcBloom.Threshold = 0.8
+				pcBloom.Parent = Lighting
+			end
+			
+			if not pcSunRays then
+				pcSunRays = Instance.new("SunRaysEffect")
+				pcSunRays.Name = "NewScriptV47_PCSunRays"
+				pcSunRays.Intensity = 0.45
+				pcSunRays.Spread = 1
+				pcSunRays.Parent = Lighting
+			end
+			
+			if not pcColorCorrection then
+				pcColorCorrection = Instance.new("ColorCorrectionEffect")
+				pcColorCorrection.Name = "NewScriptV47_PCColorCorrection"
+				pcColorCorrection.Brightness = 0.05
+				pcColorCorrection.Contrast = 0.25
+				pcColorCorrection.Saturation = 0.35
+				pcColorCorrection.TintColor = Color3.fromRGB(255, 248, 240)
+				pcColorCorrection.Parent = Lighting
+			end
+
+			if not pcDepthOfField then
+				pcDepthOfField = Instance.new("DepthOfFieldEffect")
+				pcDepthOfField.Name = "NewScriptV47_PCDepthOfField"
+				pcDepthOfField.FarIntensity = 0.2
+				pcDepthOfField.FocusDistance = 40
+				pcDepthOfField.InFocusRadius = 25
+				pcDepthOfField.Parent = Lighting
+			end
+		end)
+	else
+		pcall(function()
+			if pcAtmosphere then pcAtmosphere:Destroy(); pcAtmosphere = nil end
+			if pcBloom then pcBloom:Destroy(); pcBloom = nil end
+			if pcSunRays then pcSunRays:Destroy(); pcSunRays = nil end
+			if pcColorCorrection then pcColorCorrection:Destroy(); pcColorCorrection = nil end
+			if pcDepthOfField then pcDepthOfField:Destroy(); pcDepthOfField = nil end
+		end)
+	end
+end
+
+-- Hệ thống Fix Lag Ngược Sharder (V1, V2, V3)
+local function applyFixLag(mode: string)
+	pcall(function()
+		if mode == "Off" then
+			Lighting.GlobalShadows = true
+			for _, v in ipairs(workspace:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Reflectance = 0
+				elseif v:IsA("Decal") or v:IsA("Texture") then
+					v.Transparency = 0
+				end
+			end
+		elseif mode == "V1_Light" then
+			Lighting.GlobalShadows = false
+			Lighting.FogEnd = 9e9
+			for _, v in ipairs(workspace:GetDescendants()) do
+				if v:IsA("Decal") or v:IsA("Texture") then
+					v.Transparency = 0.5
+				end
+			end
+		elseif mode == "V2_Medium" then
+			Lighting.GlobalShadows = false
+			Lighting.FogEnd = 5000
+			for _, v in ipairs(workspace:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Material = Enum.Material.SmoothPlastic
+				elseif v:IsA("Decal") or v:IsA("Texture") then
+					v.Transparency = 1
+				end
+			end
+		elseif mode == "V3_Heavy" then
+			Lighting.GlobalShadows = false
+			Lighting.FogEnd = 2000
+			for _, v in ipairs(workspace:GetDescendants()) do
+				if v:IsA("BasePart") then
+					v.Material = Enum.Material.SmoothPlastic
+					v.Reflectance = 0
+					v.CastShadow = false
+				elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("ParticleEmitter") or v:IsA("Trail") then
+					v.Transparency = 1
+				end
+			end
+		end
+	end)
+end
+
+-- Hệ thống Nhạc Cá Nhân (Client Music ID)
+local clientMusicSound: Sound? = nil
+local function playClientMusic(id: number)
+	if clientMusicSound then
+		clientMusicSound:Stop()
+		clientMusicSound:Destroy()
+		clientMusicSound = nil
+	end
+	
+	if id > 0 then
+		clientMusicSound = Instance.new("Sound")
+		clientMusicSound.Name = "NewScriptV47_ClientMusic"
+		clientMusicSound.SoundId = "rbxassetid://" .. tostring(id)
+		clientMusicSound.Volume = 2
+		clientMusicSound.Looped = true
+		clientMusicSound.Parent = SoundService
+		clientMusicSound:Play()
+	end
+end
+
+local function updateEspPlayers()
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= player then
+			local char = p.Character
+			if char then
+				local highlight = char:FindFirstChild("NewScriptV47_ESP_Highlight")
+				local billboard = char:FindFirstChild("NewScriptV47_ESP_NameTag")
+				
+				if settings.EspPlayersEnabled then
+					if not highlight then
+						highlight = Instance.new("Highlight")
+						highlight.Name = "NewScriptV47_ESP_Highlight"
+						highlight.Adornee = char
+						highlight.FillColor = Color3.fromRGB(0, 255, 128)
+						highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+						highlight.FillTransparency = 0.4
+						highlight.OutlineTransparency = 0
+						highlight.Parent = char
+					end
+					
+					if not billboard then
+						local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
+						if head then
+							billboard = Instance.new("BillboardGui")
+							billboard.Name = "NewScriptV47_ESP_NameTag"
+							billboard.Size = UDim2.new(0, 100, 0, 40)
+							billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+							billboard.AlwaysOnTop = true
+							billboard.Adornee = head
+							
+							local textLabel = Instance.new("TextLabel")
+							textLabel.Size = UDim2.new(1, 0, 1, 0)
+							textLabel.BackgroundTransparency = 1
+							textLabel.Text = p.Name
+							textLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
+							textLabel.TextSize = 12
+							textLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+							textLabel.TextStrokeTransparency = 0.3
+							textLabel.Parent = billboard
+							
+							billboard.Parent = char
+						end
+					end
+				else
+					if highlight then highlight:Destroy() end
+					if billboard then billboard:Destroy() end
+				end
+			end
+		end
+	end
+end
+
 local function updateRgbLed()
 	if settings.RgbLedEnabled then
 		local char = player.Character
 		if char then
 			local hue = (tick() % 5) / 5
 			local rainbowColor = Color3.fromHSV(hue, 1, 1)
-			local highlight = char:FindFirstChild("NewScriptV3_RGB_LED")
+			local highlight = char:FindFirstChild("NewScriptV47_RGB_LED")
 			if not highlight then
 				highlight = Instance.new("Highlight")
-				highlight.Name = "NewScriptV3_RGB_LED"
+				highlight.Name = "NewScriptV47_RGB_LED"
 				highlight.Adornee = char
 				highlight.FillTransparency = 0.5
 				highlight.OutlineTransparency = 0
@@ -102,30 +301,12 @@ local function updateRgbLed()
 	else
 		local char = player.Character
 		if char then
-			local highlight = char:FindFirstChild("NewScriptV3_RGB_LED")
+			local highlight = char:FindFirstChild("NewScriptV47_RGB_LED")
 			if highlight then highlight:Destroy() end
 		end
 	end
 end
 
-local function applyAntiLag(enable: boolean)
-	if enable then
-		pcall(function()
-			Lighting.GlobalShadows = false
-			Lighting.FogEnd = 9e9
-			for _, v in ipairs(workspace:GetDescendants()) do
-				if v:IsA("BasePart") then
-					v.Material = Enum.Material.SmoothPlastic
-					v.Reflectance = 0
-				elseif v:IsA("Decal") or v:IsA("Texture") then
-					v.Transparency = 1
-				end
-			end
-		end)
-	end
-end
-
--- Hàm hỗ trợ kéo thả có khóa nút cho 4 ngón
 local function makeDraggable(guiObj: GuiObject)
 	local dragging, dragStart, startPos
 	guiObj.InputBegan:Connect(function(input)
@@ -153,23 +334,26 @@ local function makeDraggable(guiObj: GuiObject)
 	end)
 end
 
--- NÚT BẬT/TẮT MENU CHÍNH
-local toggleBtn = Instance.new("ImageButton")
-toggleBtn.Size = UDim2.new(0, 50, 0, 50)
+-- NÚT BẬT/TẮT MENU CHÍNH (LOGO ヾ⁠(⁠˙⁠❥⁠˙⁠)⁠ﾉ)
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 55, 0, 55)
 toggleBtn.Position = UDim2.new(0, 20, 0, 20)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-toggleBtn.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+toggleBtn.Text = "ヾ(˙❥˙)ﾉ"
+toggleBtn.TextColor3 = Color3.fromRGB(255, 180, 200)
+toggleBtn.TextSize = 12
+toggleBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
 toggleBtn.Parent = screenGui
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(1, 0)
 local tStroke = Instance.new("UIStroke", toggleBtn)
 tStroke.Thickness = 2.5
-tStroke.Color = Color3.fromRGB(80, 80, 110)
+tStroke.Color = Color3.fromRGB(255, 150, 180)
 makeDraggable(toggleBtn)
 
 -- MENU CHÍNH
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 360, 0, 480)
-mainFrame.Position = UDim2.new(0, 80, 0.5, -240)
+mainFrame.Position = UDim2.new(0, 90, 0.5, -240)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainFrame.BackgroundTransparency = 0.05
 mainFrame.ClipsDescendants = true
@@ -195,8 +379,8 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(1, -70, 1, 0)
 titleText.Position = UDim2.new(0, 12, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "⚡ EVADE SCRIPT V3.8 (COUNTER SYNC)"
-titleText.TextColor3 = Color3.fromRGB(230, 230, 245)
+titleText.Text = "⚡ ヾ(˙❥˙)ﾉ EVADE V4.7 (PC SHADER 4K-8K)"
+titleText.TextColor3 = Color3.fromRGB(255, 200, 220)
 titleText.TextSize = 10
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
@@ -231,7 +415,7 @@ resizeModeBtn.MouseButton1Click:Connect(function()
 		resizeModeBtn.Text = "🗗"
 	else
 		mainFrame:TweenSize(UDim2.new(0, 360, 0, 480), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-		mainFrame.Position = UDim2.new(0, 80, 0.5, -240)
+		mainFrame.Position = UDim2.new(0, 90, 0.5, -240)
 		resizeModeBtn.Text = "🗖"
 	end
 end)
@@ -240,7 +424,7 @@ local scrollContainer = Instance.new("ScrollingFrame")
 scrollContainer.Size = UDim2.new(1, -16, 1, -55)
 scrollContainer.Position = UDim2.new(0, 8, 0, 45)
 scrollContainer.BackgroundTransparency = 1
-scrollContainer.CanvasSize = UDim2.new(0, 0, 0, 600)
+scrollContainer.CanvasSize = UDim2.new(0, 0, 0, 750)
 scrollContainer.ScrollBarThickness = 4
 scrollContainer.Parent = mainFrame
 
@@ -263,7 +447,7 @@ local function createSectionHeader(posY, text)
 	label.Position = UDim2.new(0, 5, 0, posY)
 	label.BackgroundTransparency = 1
 	label.Text = text
-	label.TextColor3 = Color3.fromRGB(150, 150, 180)
+	label.TextColor3 = Color3.fromRGB(255, 180, 200)
 	label.TextSize = 10
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
@@ -321,13 +505,23 @@ local function createToggle(posY, text, stateVar)
 		if stateVar == "RgbLedEnabled" and not val then
 			updateRgbLed()
 		end
-		if stateVar == "AntiLagEnabled" then
-			applyAntiLag(val)
+		if stateVar == "UltraShaderEnabled" then
+			applyPCShader(val)
+		end
+		if stateVar == "EspPlayersEnabled" and not val then
+			updateEspPlayers()
+		end
+		if stateVar == "CustomMusicEnabled" then
+			if val then
+				playClientMusic(settings.CustomMusicId)
+			else
+				playClientMusic(0)
+			end
 		end
 	end)
 end
 
-local function createSizeInput(posY, text, defaultVal, minVal, maxVal, callback)
+local function createDropdown(posY, text, options, currentVal, callback)
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(1, -10, 0, 36)
 	frame.Position = UDim2.new(0, 5, 0, posY)
@@ -336,7 +530,56 @@ local function createSizeInput(posY, text, defaultVal, minVal, maxVal, callback)
 	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
 	
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0, 200, 1, 0)
+	label.Size = UDim2.new(0, 160, 1, 0)
+	label.Position = UDim2.new(0, 12, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(210, 210, 225)
+	label.TextSize = 10
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+	label.Parent = frame
+
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 110, 0, 24)
+	btn.Position = UDim2.new(1, -120, 0.5, -12)
+	btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+	btn.Text = currentVal
+	btn.TextColor3 = Color3.fromRGB(240, 240, 240)
+	btn.TextSize = 10
+	btn.FontFace = Font.new("rbxasset://fonts/families/GothamMedium.json")
+	btn.Parent = frame
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+
+	local currentIndex = 1
+	for i, opt in ipairs(options) do
+		if opt == currentVal then
+			currentIndex = i
+			break
+		end
+	end
+
+	btn.MouseButton1Click:Connect(function()
+		currentIndex = currentIndex + 1
+		if currentIndex > #options then
+			currentIndex = 1
+		end
+		local selected = options[currentIndex]
+		btn.Text = selected
+		callback(selected)
+	end)
+end
+
+local function createSizeInput(posY, text, defaultVal, callback)
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -10, 0, 36)
+	frame.Position = UDim2.new(0, 5, 0, posY)
+	frame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	frame.Parent = scrollContainer
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0, 180, 1, 0)
 	label.Position = UDim2.new(0, 12, 0, 0)
 	label.BackgroundTransparency = 1
 	label.Text = text
@@ -347,8 +590,8 @@ local function createSizeInput(posY, text, defaultVal, minVal, maxVal, callback)
 	label.Parent = frame
 
 	local box = Instance.new("TextBox")
-	box.Size = UDim2.new(0, 65, 0, 24)
-	box.Position = UDim2.new(1, -75, 0.5, -12)
+	box.Size = UDim2.new(0, 85, 0, 24)
+	box.Position = UDim2.new(1, -95, 0.5, -12)
 	box.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 	box.Text = tostring(defaultVal)
 	box.TextColor3 = Color3.fromRGB(240, 240, 240)
@@ -359,7 +602,7 @@ local function createSizeInput(posY, text, defaultVal, minVal, maxVal, callback)
 
 	box.FocusLost:Connect(function()
 		local num = tonumber(box.Text)
-		if num and num >= minVal and num <= maxVal then
+		if num then
 			callback(num)
 		else
 			box.Text = tostring(defaultVal)
@@ -367,61 +610,37 @@ local function createSizeInput(posY, text, defaultVal, minVal, maxVal, callback)
 	end)
 end
 
-createSectionHeader(0, "🔥 MỤC PLAYERS & TÙY CHỈNH 4 NGÓN")
+createSectionHeader(0, "✨ MỤC PLAYERS & TÙY CHỈNH 4 NGÓN")
 createToggle(25, "🔒 Khóa Nút (Tránh Chạm Nhầm)", "LockButtons")
-createToggle(63, "🚀 Trimp (Bay/Lướt Phá Giới Hạn)", "TrimpEnabled")
+createToggle(63, "👁️ ESP Players (Phát Sáng & Tên)", "EspPlayersEnabled")
 createToggle(101, "⚡ Auto Jump (Nhảy tự động)", "AutoJumpEnabled")
 createToggle(139, "⚡ Lag Switch Khựng Màn Hình", "LagSwitchActive")
-createToggle(177, "🧲 Nhặt Bubbles Tự Động", "AutoCollectBubbles")
+createToggle(177, "🧲 Teleport Tới Bubbles Mới & Ở Lại", "AutoCollectBubbles")
 createToggle(215, "🚀 AFK Farm 1500m + Khối", "AfkFarmSky")
 
-createSectionHeader(253, "⚙️ MỤC SETTINGS & TỐI ƯU")
-createToggle(278, "🌈 RGB LED Đổi Màu Nhân Vật", "RgbLedEnabled")
-createToggle(316, "✨ Menu RGB Đổi Màu Giao Diện", "MenuRgbEnabled")
-createToggle(354, "🚀 Fix Lag Tăng FPS Môi Trường", "AntiLagEnabled")
-createToggle(392, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
-
-createSizeInput(430, "🎯 Tốc Độ Trimp (Bứt Phá / Mặc Định)", settings.SpeedOverrideValue, 10, 500, function(val)
-	settings.SpeedOverrideValue = val
+createSectionHeader(253, "💎 MỤC ĐỒ HỌA PC 4K-8K & FIX LAG V1-V3")
+createToggle(278, "🌟 Shader 4K-8K Đẳng Cấp PC (Ultra)", "UltraShaderEnabled")
+createDropdown(316, "🚀 Chế Độ Fix Lag (Ngược Sharder)", {"Off", "V1_Light", "V2_Medium", "V3_Heavy"}, settings.FixLagMode, function(val)
+	settings.FixLagMode = val
+	applyFixLag(val)
 end)
 
-createSizeInput(468, "⏱️ Giây Lag Switch (0-3s)", settings.LagSwitchSeconds, 0, 3, function(val)
-	settings.LagSwitchSeconds = val
-end)
-
-createSizeInput(506, "📏 Kích Thước Nút Nhảy", settings.JumpButtonWidth, 50, 300, function(val)
-	settings.JumpButtonWidth = val
-end)
-
--- NÚT TRIMP NỔI
-local trimpFloatingBtn = Instance.new("TextButton")
-trimpFloatingBtn.Size = UDim2.new(0, 110, 0, 45)
-trimpFloatingBtn.Position = UDim2.new(0.6, 0, 0.4, 0)
-trimpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-trimpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-trimpFloatingBtn.Text = "TRIMP: OFF"
-trimpFloatingBtn.TextSize = 10
-trimpFloatingBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-trimpFloatingBtn.Visible = false
-trimpFloatingBtn.Parent = screenGui
-Instance.new("UICorner", trimpFloatingBtn).CornerRadius = UDim.new(0, 8)
-local trStroke = Instance.new("UIStroke", trimpFloatingBtn)
-trStroke.Thickness = 1.5
-trStroke.Color = Color3.fromRGB(100, 100, 120)
-makeDraggable(trimpFloatingBtn)
-
-trimpFloatingBtn.MouseButton1Click:Connect(function()
-	local activeState = not trimpFloatingBtn:GetAttribute("IsActive")
-	trimpFloatingBtn:SetAttribute("IsActive", activeState)
-	if activeState then
-		trimpFloatingBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-		trimpFloatingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		trimpFloatingBtn.Text = "TRIMP: ON"
-	else
-		trimpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-		trimpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-		trimpFloatingBtn.Text = "TRIMP: OFF"
+createSectionHeader(354, "🎵 MỤC ÂM THANH NHẠC CÁ NHÂN")
+createToggle(379, "🎶 Bật Nhạc Riêng (Chỉ Bạn Nghe)", "CustomMusicEnabled")
+createSizeInput(417, "🎧 Nhập ID Nhạc Roblox", settings.CustomMusicId, function(val)
+	settings.CustomMusicId = val
+	if settings.CustomMusicEnabled then
+		playClientMusic(val)
 	end
+end)
+
+createSectionHeader(455, "⚙️ MỤC SETTINGS & TỐI ƯU")
+createToggle(480, "🌈 RGB LED Đổi Màu Nhân Vật", "RgbLedEnabled")
+createToggle(518, "✨ Menu RGB Đổi Màu Giao Diện", "MenuRgbEnabled")
+createToggle(556, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
+
+createSizeInput(594, "⏱️ Giây Lag Switch", settings.LagSwitchSeconds, function(val)
+	settings.LagSwitchSeconds = val
 end)
 
 -- NÚT AUTO JUMP NỔI
@@ -476,7 +695,7 @@ lagSwitchFloatingBtn.MouseButton1Click:Connect(function()
 		lagSwitchFloatingBtn.BackgroundColor3 = Color3.fromRGB(110, 40, 10)
 		lagSwitchFloatingBtn.Text = "FREEZING..."
 		
-		local duration = math.clamp(settings.LagSwitchSeconds, 0, 3)
+		local duration = math.clamp(settings.LagSwitchSeconds, 0, 10)
 		if duration > 0 then
 			local endTime = tick() + duration
 			while tick() < endTime do
@@ -498,7 +717,7 @@ local statsLabel = Instance.new("TextLabel")
 statsLabel.Size = UDim2.new(0, 140, 0, 36)
 statsLabel.Position = UDim2.new(1, -150, 0, 20)
 statsLabel.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-statsLabel.TextColor3 = Color3.fromRGB(40, 220, 110)
+statsLabel.TextColor3 = Color3.fromRGB(255, 180, 200)
 statsLabel.TextSize = 9
 statsLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
 statsLabel.Parent = screenGui
@@ -508,50 +727,25 @@ local lastTick = tick()
 local frameCount = 0
 local fps = 60
 
-local function getBubbles()
-	local list = {}
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") and (string.find(string.lower(obj.Name), "bubble") or string.find(string.lower(obj.Name), "bong")) then
-			table.insert(list, obj)
-		end
-	end
-	return list
-end
-
-local maxFallHeight = 0
-local wasInAir = false
-
--- Hàm phụ trợ tự động tìm và đồng bộ chỉ số tốc độ lên bộ đếm giao diện gốc của game Evade (nếu có)
-local function syncGameSpeedCounter(targetSpeed: number)
-	pcall(function()
-		local playerGui = player:FindFirstChild("PlayerGui")
-		if playerGui then
-			for _, gui in ipairs(playerGui:GetDescendants()) do
-				if gui:IsA("TextLabel") then
-					local txt = string.lower(gui.Text)
-					-- Nhận diện các nhãn văn bản có thể hiển thị chỉ số tốc độ/mét trên giây ở góc dưới màn hình
-					if tonumber(gui.Text) and (gui.AbsolutePosition.Y > (workspace.CurrentCamera.ViewportSize.Y * 0.6)) then
-						-- Có thể ép giá trị trực tiếp hoặc để game tự đọc velocity thực tế từ rootpart
-					end
-				end
-			end
-		end
-	end)
-end
+local processedBubbles = {}
+local lastBubbleCheck = 0
 
 RunService.RenderStepped:Connect(function(dt)
 	frameCount += 1
 	if tick() - lastTick >= 1 then
 		fps = frameCount
-		frameCount = 0
+        frameCount = 0
 		lastTick = tick()
 	end
 	
 	statsLabel.Text = string.format("FPS: %d\nPlayers: %d", fps, #Players:GetPlayers())
 	
-	trimpFloatingBtn.Visible = settings.TrimpEnabled
 	jumpFloatingBtn.Visible = settings.AutoJumpEnabled
 	lagSwitchFloatingBtn.Visible = settings.LagSwitchActive
+
+	if settings.EspPlayersEnabled then
+		updateEspPlayers()
+	end
 
 	if settings.MenuRgbEnabled or settings.RgbLedEnabled then
 		local hue = (tick() % 4) / 4
@@ -562,7 +756,7 @@ RunService.RenderStepped:Connect(function(dt)
 			tStroke.Color = rainbowColor
 		else
 			mStroke.Color = Color3.fromRGB(60, 60, 85)
-			tStroke.Color = Color3.fromRGB(80, 80, 110)
+			tStroke.Color = Color3.fromRGB(255, 150, 180)
 		end
 
 		if settings.RgbLedEnabled then
@@ -570,68 +764,79 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	else
 		mStroke.Color = Color3.fromRGB(60, 60, 85)
-		tStroke.Color = Color3.fromRGB(80, 80, 110)
+		tStroke.Color = Color3.fromRGB(255, 150, 180)
 		local char = player.Character
 		if char then
-			local highlight = char:FindFirstChild("NewScriptV3_RGB_LED")
+			local highlight = char:FindFirstChild("NewScriptV47_RGB_LED")
 			if highlight then highlight:Destroy() end
 		end
 	end
 
-	local char = player.Character
-	if not char then return end
-	local root = char:FindFirstChild("HumanoidRootPart")
-	local hum = char:FindFirstChildOfClass("Humanoid")
-
-	local isTrimpActive = trimpFloatingBtn:GetAttribute("IsActive") == true
-	if settings.TrimpEnabled and isTrimpActive and root and hum then
-		if hum.FloorMaterial == Enum.Material.Air then
-			if not wasInAir then
-				wasInAir = true
-				maxFallHeight = root.Position.Y
-			else
-				if root.Position.Y > maxFallHeight then
-					maxFallHeight = root.Position.Y
-				end
-			end
-		else
-			if wasInAir then
-				local fallDistance = maxFallHeight - root.Position.Y
-				if fallDistance > 5 and hum.MoveDirection.Magnitude > 0 then
-					-- Phá vỡ giới hạn 55 mặc định của game: Ép thẳng vận tốc Velocity theo chỉ số người dùng nhập (Ví dụ: 100)
-					local targetVel = settings.SpeedOverrideValue
-					root.Velocity = Vector3.new(hum.MoveDirection.X * targetVel, math.clamp(targetVel * 0.8, 65, 120), hum.MoveDirection.Z * targetVel)
-				end
-				wasInAir = false
-				maxFallHeight = root.Position.Y
+	-- Xử lý Nhạc Cá Nhân
+	if settings.CustomMusicEnabled then
+		if not clientMusicSound or not clientMusicSound.IsPlaying then
+			if settings.CustomMusicId > 0 then
+				playClientMusic(settings.CustomMusicId)
 			end
 		end
-		
-		-- Ép liên tục gia tốc chuyển động ngang để bộ đếm chỉ số tốc độ vàng góc dưới bên trái nhận diện chính xác con số (100+)
-		if hum.MoveDirection.Magnitude > 0 and hum.FloorMaterial ~= Enum.Material.Air then
-			local currentV = root.Velocity
-			root.Velocity = Vector3.new(hum.MoveDirection.X * settings.SpeedOverrideValue, currentV.Y, hum.MoveDirection.Z * settings.SpeedOverrideValue)
+	else
+		if clientMusicSound then
+			clientMusicSound:Stop()
+			clientMusicSound:Destroy()
+			clientMusicSound = nil
 		end
 	end
 
-	local isJumpActive = jumpFloatingBtn:GetAttribute("IsActive") == true
-	if settings.AutoJumpEnabled and isJumpActive and hum and hum.FloorMaterial ~= Enum.Material.Air then
-		hum:ChangeState(Enum.HumanoidStateType.Jumping)
-	end
-
-	if settings.AfkFarmSky and root and hum then
-		root.CFrame = CFrame.new(0, 1500, 0)
-		hum.PlatformStand = true
+	-- Afk Farm Sky
+	if settings.AfkFarmSky then
 		updateAfkPlatform(true)
+		local char = player.Character
+		if char then
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if root then
+				root.CFrame = CFrame.new(root.Position.X, 1500, root.Position.Z)
+				root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+			end
+		end
 	else
 		updateAfkPlatform(false)
+		
+		-- Smart Teleport tới Bubbles mới
+		if settings.AutoCollectBubbles and (tick() - lastBubbleCheck >= 0.8) then
+			lastBubbleCheck = tick()
+			task.spawn(function()
+				local c = player.Character
+				if c then
+					local r = c:FindFirstChild("HumanoidRootPart")
+					if r then
+						for _, obj in ipairs(workspace:GetDescendants()) do
+							if obj:IsA("BasePart") then
+								local nLower = string.lower(obj.Name)
+								if string.find(nLower, "bubble") or string.find(nLower, "bong") or string.find(nLower, "item") or string.find(nLower, "pickup") or string.find(nLower, "coin") then
+									if not processedBubbles[obj] then
+										processedBubbles[obj] = true
+										r.CFrame = obj.CFrame + Vector3.new(0, 2, 0)
+										r.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+										break
+									end
+								end
+							end
+						end
+					end
+				end
+			end)
+		end
 	end
 
-	if settings.AutoCollectBubbles and root then
-		for _, bubble in ipairs(getBubbles()) do
-			if bubble and bubble:IsA("BasePart") then
-				root.CFrame = bubble.CFrame
-				task.wait(0.05)
+	-- Auto Jump logic
+	local char = player.Character
+	if char and not settings.AfkFarmSky then
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			if settings.AutoJumpEnabled and (jumpFloatingBtn:GetAttribute("IsActive") == true) then
+				if humanoid.FloorMaterial ~= Enum.Material.Air and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
+					humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+				end
 			end
 		end
 	end
