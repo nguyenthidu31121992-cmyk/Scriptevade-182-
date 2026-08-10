@@ -1,6 +1,6 @@
 --!strict
 --[[
-    GUMMI HUB (Ultra Next-Gen 4K-8K PC-Level Shader & Tab System)
+    GUMMI HUB (Ultra Next-Gen 4K-8K PC-Level Shader & Tab System - Updated 10 Levels Extreme)
 --]]
 
 local Players = game:GetService("Players")
@@ -9,8 +9,6 @@ local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
-local SoundService = game:GetService("SoundService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local player = Players.LocalPlayer
 
@@ -18,11 +16,11 @@ local settings = {
 	MenuVisible = true,
 	MenuMinimized = false,
 	AutoJumpEnabled = false,
-	AutoSlideEnabled = false,
-	SlideDelay = 0.5,
+	SpeedBoostEnabled = false,
+	SpeedLevel = 10, -- Mặc định mức 10 theo yêu cầu mới
+	BypassSpeedEnabled = false,
 	LagSwitchActive = false,
 	LagSwitchSeconds = 1,
-	RgbLedEnabled = false,
 	MenuRgbEnabled = true,
 	AutoCollectBubbles = false,
 	AfkFarmSky = false,
@@ -30,11 +28,6 @@ local settings = {
 	LockButtons = false,
 	EspPlayersEnabled = false,
 	UltraShaderEnabled = false,
-	FixLagMode = "Off",
-	CustomMusicEnabled = false,
-	CustomMusicId = 0,
-	JumpButtonWidth = 140,
-	JumpButtonHeight = 45,
 }
 
 if CoreGui:FindFirstChild("GummiHub_Gui") then
@@ -244,14 +237,13 @@ local function makeDraggable(guiObj: GuiObject)
 	end)
 end
 
--- Lấy Avatar người chơi duclinx làm Logo Menu
 local targetUserId = 2914197475
 pcall(function()
 	targetUserId = Players:GetUserIdFromNameAsync("duclinx")
 end)
 local avatarImageContent = Players:GetUserThumbnailAsync(targetUserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 
--- NÚT BẬT/TẮT MENU CHÍNH (AVATAR DUCLINX)
+-- NÚT BẬT/TẮT MENU CHÍNH
 local toggleBtn = Instance.new("ImageButton")
 toggleBtn.Size = UDim2.new(0, 50, 0, 50)
 toggleBtn.Position = UDim2.new(0, 20, 0, 20)
@@ -264,7 +256,7 @@ tStroke.Thickness = 2.5
 tStroke.Color = Color3.fromRGB(255, 150, 180)
 makeDraggable(toggleBtn)
 
--- MENU CHÍNH (GUMMI HUB)
+-- MENU CHÍNH
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 500, 0, 360)
 mainFrame.Position = UDim2.new(0.5, -250, 0.5, -180)
@@ -283,7 +275,6 @@ toggleBtn.MouseButton1Click:Connect(function()
 	mainFrame.Visible = settings.MenuVisible
 end)
 
--- Thanh tiêu đề
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 35)
 titleBar.BackgroundTransparency = 1
@@ -325,7 +316,6 @@ closeBtn.MouseButton1Click:Connect(function()
 	screenGui:Destroy()
 end)
 
--- Sidebar (Tab Menu bên trái)
 local sidebar = Instance.new("Frame")
 sidebar.Size = UDim2.new(0, 130, 1, -45)
 sidebar.Position = UDim2.new(0, 8, 0, 40)
@@ -342,7 +332,7 @@ local function createTabPage()
 	local page = Instance.new("ScrollingFrame")
 	page.Size = UDim2.new(1, 0, 1, 0)
 	page.BackgroundTransparency = 1
-	page.CanvasSize = UDim2.new(0, 0, 0, 450)
+	page.CanvasSize = UDim2.new(0, 0, 0, 520)
 	page.ScrollBarThickness = 3
 	page.Visible = false
 	page.Parent = tabContainer
@@ -379,7 +369,7 @@ createTabButton(0, "⚙️ Settings", pageSettings)
 createTabButton(45, "👥 Players", pagePlayers)
 createTabButton(90, "📜 Cre", pageCre)
 
--- NÚT TÁCH RIÊNG KHỞI TẠO LUÔN
+-- Nút Auto Jump Nổi
 local jumpFloatingBtn = Instance.new("TextButton")
 jumpFloatingBtn.Size = UDim2.new(0, 130, 0, 40)
 jumpFloatingBtn.Position = UDim2.new(0.75, 0, 0.35, 0)
@@ -407,7 +397,6 @@ jumpFloatingBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Điền nội dung cho Tab Settings
 local function createToggle(parent, posY, text, stateVar)
 	local frame = Instance.new("Frame")
 	frame.Size = UDim2.new(1, -10, 0, 34)
@@ -472,14 +461,71 @@ local function createToggle(parent, posY, text, stateVar)
 end
 
 createToggle(pageSettings, 0, "⚡ Auto Jump", "AutoJumpEnabled")
-createToggle(pageSettings, 40, "🌟 PC Shader 4K-8K", "UltraShaderEnabled")
-createToggle(pageSettings, 80, "🌈 Menu RGB Animation", "MenuRgbEnabled")
-createToggle(pageSettings, 120, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
+createToggle(pageSettings, 40, "🏃‍♂️ Speed Boost (Chạy Nhanh)", "SpeedBoostEnabled")
 
--- Ghi chú cho tính năng Auto C/Control đang bị vô hiệu hoá tạm thời
+-- Thanh điều chỉnh 10 mức Speed Level (Từ nhẹ đến cực hạn: Mức 1 tới Mức 10)
+local speedLevelFrame = Instance.new("Frame")
+speedLevelFrame.Size = UDim2.new(1, -10, 0, 34)
+speedLevelFrame.Position = UDim2.new(0, 5, 0, 80)
+speedLevelFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+speedLevelFrame.Parent = pageSettings
+Instance.new("UICorner", speedLevelFrame).CornerRadius = UDim.new(0, 8)
+
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(0, 180, 1, 0)
+speedLabel.Position = UDim2.new(0, 10, 0, 0)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "⚙️ Speed Level: Mức " .. tostring(settings.SpeedLevel)
+speedLabel.TextColor3 = Color3.fromRGB(210, 210, 225)
+speedLabel.TextSize = 10
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+speedLabel.Parent = speedLevelFrame
+
+local subSpeedBtn = Instance.new("TextButton")
+subSpeedBtn.Size = UDim2.new(0, 28, 0, 22)
+subSpeedBtn.Position = UDim2.new(1, -74, 0.5, -11)
+subSpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+subSpeedBtn.Text = "-"
+subSpeedBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
+subSpeedBtn.TextSize = 12
+subSpeedBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+subSpeedBtn.Parent = speedLevelFrame
+Instance.new("UICorner", subSpeedBtn).CornerRadius = UDim.new(0, 6)
+
+local addSpeedBtn = Instance.new("TextButton")
+addSpeedBtn.Size = UDim2.new(0, 28, 0, 22)
+addSpeedBtn.Position = UDim2.new(1, -40, 0.5, -11)
+addSpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+addSpeedBtn.Text = "+"
+addSpeedBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
+addSpeedBtn.TextSize = 12
+addSpeedBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+addSpeedBtn.Parent = speedLevelFrame
+Instance.new("UICorner", addSpeedBtn).CornerRadius = UDim.new(0, 6)
+
+subSpeedBtn.MouseButton1Click:Connect(function()
+	if settings.SpeedLevel > 1 then
+		settings.SpeedLevel -= 1
+		speedLabel.Text = "⚙️ Speed Level: Mức " .. tostring(settings.SpeedLevel)
+	end
+end)
+
+addSpeedBtn.MouseButton1Click:Connect(function()
+	if settings.SpeedLevel < 10 then
+		settings.SpeedLevel += 1
+		speedLabel.Text = "⚙️ Speed Level: Mức " .. tostring(settings.SpeedLevel)
+	end
+end)
+
+createToggle(pageSettings, 120, "🔓 Bypass Speed (Ép Tốc Độ Hoạt Động)", "BypassSpeedEnabled")
+createToggle(pageSettings, 160, "🌟 PC Shader 4K-8K", "UltraShaderEnabled")
+createToggle(pageSettings, 200, "🌈 Menu RGB Animation", "MenuRgbEnabled")
+createToggle(pageSettings, 240, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
+
 local disabledNoteLabel = Instance.new("TextLabel")
-disabledNoteLabel.Size = UDim2.new(1, -10, 0, 28)
-disabledNoteLabel.Position = UDim2.new(0, 5, 0, 165)
+disabledNoteLabel.Size = UDim2.new(1, -10, 0, 32)
+disabledNoteLabel.Position = UDim2.new(0, 5, 0, 285)
 disabledNoteLabel.BackgroundTransparency = 1
 disabledNoteLabel.Text = "⚠️ Auto C/Control: Tính năng tạm thời bị vô hiệu hoá"
 disabledNoteLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
@@ -488,14 +534,12 @@ disabledNoteLabel.TextXAlignment = Enum.TextXAlignment.Left
 disabledNoteLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
 disabledNoteLabel.Parent = pageSettings
 
--- Điền nội dung cho Tab Players
 createToggle(pagePlayers, 0, "👁️ ESP Players (Highlight)", "EspPlayersEnabled")
 createToggle(pagePlayers, 40, "🔒 Khóa Vị Trí Nút", "LockButtons")
 createToggle(pagePlayers, 80, "⚡ Lag Switch Khựng Màn Hình", "LagSwitchActive")
 createToggle(pagePlayers, 120, "🧲 Teleport Tới Bubbles", "AutoCollectBubbles")
 createToggle(pagePlayers, 160, "🚀 AFK Farm 1500m + Khối", "AfkFarmSky")
 
--- Điền nội dung cho Tab Cre
 local creLabel = Instance.new("TextLabel")
 creLabel.Size = UDim2.new(1, -10, 1, 0)
 creLabel.Position = UDim2.new(0, 5, 0, 0)
@@ -523,151 +567,6 @@ minimizeBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- NÚT TÁCH RIÊNG KHỞI TẠO LUÔN
-local jumpFloatingBtn = Instance.new("TextButton")
-jumpFloatingBtn.Size = UDim2.new(0, 130, 0, 40)
-jumpFloatingBtn.Position = UDim2.new(0.75, 0, 0.35, 0)
-jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-jumpFloatingBtn.Text = "AUTO JUMP: OFF"
-jumpFloatingBtn.TextSize = 10
-jumpFloatingBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-jumpFloatingBtn.Visible = false
-jumpFloatingBtn.Parent = screenGui
-Instance.new("UICorner", jumpFloatingBtn).CornerRadius = UDim.new(0, 8)
-makeDraggable(jumpFloatingBtn)
-
-jumpFloatingBtn.MouseButton1Click:Connect(function()
-	local activeState = not jumpFloatingBtn:GetAttribute("IsActive")
-	jumpFloatingBtn:SetAttribute("IsActive", activeState)
-	if activeState then
-		jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 100)
-		jumpFloatingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		jumpFloatingBtn.Text = "AUTO JUMP: ON"
-	else
-		jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-		jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-		jumpFloatingBtn.Text = "AUTO JUMP: OFF"
-	end
-end)
-
--- Điền nội dung cho Tab Settings
-local function createToggle(parent, posY, text, stateVar)
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, -10, 0, 34)
-	frame.Position = UDim2.new(0, 5, 0, posY)
-	frame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-	frame.Parent = parent
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-	
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0, 190, 1, 0)
-	label.Position = UDim2.new(0, 10, 0, 0)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.TextColor3 = Color3.fromRGB(210, 210, 225)
-	label.TextSize = 10
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-	label.Parent = frame
-
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 44, 0, 22)
-	btn.Position = UDim2.new(1, -52, 0.5, -11)
-	btn.BackgroundColor3 = settings[stateVar] and Color3.fromRGB(40, 180, 100) or Color3.fromRGB(45, 45, 55)
-	btn.Text = ""
-	btn.Parent = frame
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
-	
-	local indicator = Instance.new("Frame")
-	indicator.Size = UDim2.new(0, 14, 0, 14)
-	indicator.Position = settings[stateVar] and UDim2.new(1, -18, 0, 4) or UDim2.new(0, 4, 0, 4)
-	indicator.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-	indicator.Parent = btn
-	Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
-
-	btn.MouseButton1Click:Connect(function()
-		settings[stateVar] = not settings[stateVar]
-		local val = settings[stateVar]
-		if val then
-			btn.BackgroundColor3 = Color3.fromRGB(40, 180, 100)
-			indicator.Position = UDim2.new(1, -18, 0, 4)
-		else
-			btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-			indicator.Position = UDim2.new(0, 4, 0, 4)
-		end
-		
-		if stateVar == "UltraShaderEnabled" then
-			applyPCShader(val)
-		end
-		if stateVar == "EspPlayersEnabled" and not val then
-			updateEspPlayers()
-		end
-		if stateVar == "AutoJumpEnabled" then
-			jumpFloatingBtn.Visible = val
-			if not val then
-				jumpFloatingBtn:SetAttribute("IsActive", false)
-				jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-				jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-				jumpFloatingBtn.Text = "AUTO JUMP: OFF"
-			end
-		end
-	end)
-end
-
-createToggle(pageSettings, 0, "⚡ Auto Jump", "AutoJumpEnabled")
-createToggle(pageSettings, 40, "🌟 PC Shader 4K-8K", "UltraShaderEnabled")
-createToggle(pageSettings, 80, "🌈 Menu RGB Animation", "MenuRgbEnabled")
-createToggle(pageSettings, 120, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
-
--- Ghi chú cho tính năng Auto C/Control đang bị vô hiệu hoá tạm thời
-local disabledNoteLabel = Instance.new("TextLabel")
-disabledNoteLabel.Size = UDim2.new(1, -10, 0, 28)
-disabledNoteLabel.Position = UDim2.new(0, 5, 0, 165)
-disabledNoteLabel.BackgroundTransparency = 1
-disabledNoteLabel.Text = "⚠️ Auto C/Control: Tính năng tạm thời bị vô hiệu hoá"
-disabledNoteLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-disabledNoteLabel.TextSize = 9
-disabledNoteLabel.TextXAlignment = Enum.TextXAlignment.Left
-disabledNoteLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-disabledNoteLabel.Parent = pageSettings
-
--- Điền nội dung cho Tab Players
-createToggle(pagePlayers, 0, "👁️ ESP Players (Highlight)", "EspPlayersEnabled")
-createToggle(pagePlayers, 40, "🔒 Khóa Vị Trí Nút", "LockButtons")
-createToggle(pagePlayers, 80, "⚡ Lag Switch Khựng Màn Hình", "LagSwitchActive")
-createToggle(pagePlayers, 120, "🧲 Teleport Tới Bubbles", "AutoCollectBubbles")
-createToggle(pagePlayers, 160, "🚀 AFK Farm 1500m + Khối", "AfkFarmSky")
-
--- Điền nội dung cho Tab Cre
-local creLabel = Instance.new("TextLabel")
-creLabel.Size = UDim2.new(1, -10, 1, 0)
-creLabel.Position = UDim2.new(0, 5, 0, 0)
-creLabel.BackgroundTransparency = 1
-creLabel.Text = "GUMMI HUB\nDeveloper: duclinx\nSpecial Thanks for UI & Features Upgrade!"
-creLabel.TextColor3 = Color3.fromRGB(255, 180, 200)
-creLabel.TextSize = 11
-creLabel.TextXAlignment = Enum.TextXAlignment.Center
-creLabel.TextYAlignment = Enum.TextYAlignment.Center
-creLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-creLabel.Parent = pageCre
-
-minimizeBtn.MouseButton1Click:Connect(function()
-	settings.MenuMinimized = not settings.MenuMinimized
-	if settings.MenuMinimized then
-		mainFrame:TweenSize(UDim2.new(0, 500, 0, 35), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-		sidebar.Visible = false
-		tabContainer.Visible = false
-		minimizeBtn.Text = "+"
-	else
-		mainFrame:TweenSize(UDim2.new(0, 500, 0, 360), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-		sidebar.Visible = true
-		tabContainer.Visible = true
-		minimizeBtn.Text = "-"
-	end
-end)
-
--- NÚT LAG SWITCH NỔI
 local lagSwitchFloatingBtn = Instance.new("TextButton")
 lagSwitchFloatingBtn.Size = UDim2.new(0, 150, 0, 40)
 lagSwitchFloatingBtn.Position = UDim2.new(0.5, -75, 0.75, 0)
@@ -726,7 +625,6 @@ RunService.RenderStepped:Connect(function()
 		updateEspPlayers()
 	end
 
-	-- Afk Farm Sky & Bubbles
 	if settings.AfkFarmSky then
 		updateAfkPlatform(true)
 		local char = player.Character
@@ -769,14 +667,32 @@ RunService.RenderStepped:Connect(function()
 	local char = player.Character
 	if char and not settings.AfkFarmSky then
 		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		local rootPart = char:FindFirstChild("HumanoidRootPart")
 		if humanoid then
-			-- Auto Jump logic
 			if settings.AutoJumpEnabled and (jumpFloatingBtn:GetAttribute("IsActive") == true) then
 				if humanoid.FloorMaterial ~= Enum.Material.Air and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
 					humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 				end
 			end
-			-- Auto Slide/C/Control đã bị vô hiệu hoá hoàn toàn theo yêu cầu.
+			
+			-- Công thức tính tốc độ chuẩn 10 chế độ từ nhẹ (mức 1: ~20) đến cực hạn (mức 10: ~120)
+			if settings.SpeedBoostEnabled then
+				local targetSpeed = 16 + (settings.SpeedLevel * 11)
+				
+				if settings.BypassSpeedEnabled then
+					humanoid.WalkSpeed = targetSpeed
+					if rootPart and humanoid.MoveDirection.Magnitude > 0 then
+						local moveDir = humanoid.MoveDirection
+						rootPart.AssemblyLinearVelocity = Vector3.new(moveDir.X * targetSpeed, rootPart.AssemblyLinearVelocity.Y, moveDir.Z * targetSpeed)
+					end
+				else
+					humanoid.WalkSpeed = targetSpeed
+				end
+			else
+				if not settings.BypassSpeedEnabled and humanoid.WalkSpeed > 16 and humanoid.WalkSpeed <= 130 then
+					humanoid.WalkSpeed = 16
+				end
+			end
 		end
 	end
 end)
