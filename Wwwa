@@ -1,6 +1,6 @@
 --!strict
 --[[
-    NEW SCRIPT V4.7 (Ultra Next-Gen 4K-8K PC-Level Sharder, 3-Tier Fix Lag & Custom Music)
+    GUMMI HUB (Ultra Next-Gen 4K-8K PC-Level Shader & Tab System)
 --]]
 
 local Players = game:GetService("Players")
@@ -10,6 +10,7 @@ local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
 local SoundService = game:GetService("SoundService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local player = Players.LocalPlayer
 
@@ -17,6 +18,8 @@ local settings = {
 	MenuVisible = true,
 	MenuMinimized = false,
 	AutoJumpEnabled = false,
+	AutoSlideEnabled = false,
+	SlideDelay = 0.5,
 	LagSwitchActive = false,
 	LagSwitchSeconds = 1,
 	RgbLedEnabled = false,
@@ -34,15 +37,16 @@ local settings = {
 	JumpButtonHeight = 45,
 }
 
-if CoreGui:FindFirstChild("NewScriptV47_Gui") then
-	CoreGui.NewScriptV47_Gui:Destroy()
+if CoreGui:FindFirstChild("GummiHub_Gui") then
+	CoreGui.GummiHub_Gui:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "NewScriptV47_Gui"
+screenGui.Name = "GummiHub_Gui"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
-screenGui.Parent = player:WaitForChild("PlayerGui")
+local playerGui = player:WaitForChild("PlayerGui")
+screenGui.Parent = playerGui
 
 -- Chống AFK
 task.spawn(function()
@@ -60,7 +64,7 @@ local function updateAfkPlatform(create: boolean)
 	if create then
 		if not afkPlatform or not afkPlatform.Parent then
 			afkPlatform = Instance.new("Part")
-			afkPlatform.Name = "NewScriptV47_AFKPlatform"
+			afkPlatform.Name = "GummiHub_AFKPlatform"
 			afkPlatform.Size = Vector3.new(12, 1, 12)
 			afkPlatform.Anchored = true
 			afkPlatform.CanCollide = true
@@ -83,13 +87,12 @@ local function updateAfkPlatform(create: boolean)
 	end
 end
 
--- Hiệu ứng Sharder Đẳng Cấp PC (Ultra Next-Gen 4K-8K Shader)
+-- Hệ thống Shader PC
 local pcAtmosphere: Atmosphere? = nil
 local pcBloom: BloomEffect? = nil
 local pcSunRays: SunRaysEffect? = nil
 local pcColorCorrection: ColorCorrectionEffect? = nil
 local pcDepthOfField: DepthOfFieldEffect? = nil
-local pcSky: Sky? = nil
 
 local function applyPCShader(enable: boolean)
 	if enable then
@@ -101,11 +104,11 @@ local function applyPCShader(enable: boolean)
 			Lighting.OutdoorAmbient = Color3.fromRGB(70, 80, 100)
 			Lighting.Ambient = Color3.fromRGB(30, 35, 45)
 			Lighting.Brightness = 2.2
-			Lighting.ClockTime = 14.5 -- Ánh sáng chiều hoàng hôn/trưa cực đẹp chi tiết cao
+			Lighting.ClockTime = 14.5
 			
 			if not pcAtmosphere then
 				pcAtmosphere = Instance.new("Atmosphere")
-				pcAtmosphere.Name = "NewScriptV47_PCAtmosphere"
+				pcAtmosphere.Name = "GummiHub_PCAtmosphere"
 				pcAtmosphere.Density = 0.38
 				pcAtmosphere.Offset = 0.15
 				pcAtmosphere.Color = Color3.fromRGB(190, 210, 245)
@@ -117,7 +120,7 @@ local function applyPCShader(enable: boolean)
 			
 			if not pcBloom then
 				pcBloom = Instance.new("BloomEffect")
-				pcBloom.Name = "NewScriptV47_PCBloom"
+				pcBloom.Name = "GummiHub_PCBloom"
 				pcBloom.Intensity = 0.85
 				pcBloom.Size = 40
 				pcBloom.Threshold = 0.8
@@ -126,7 +129,7 @@ local function applyPCShader(enable: boolean)
 			
 			if not pcSunRays then
 				pcSunRays = Instance.new("SunRaysEffect")
-				pcSunRays.Name = "NewScriptV47_PCSunRays"
+				pcSunRays.Name = "GummiHub_PCSunRays"
 				pcSunRays.Intensity = 0.45
 				pcSunRays.Spread = 1
 				pcSunRays.Parent = Lighting
@@ -134,7 +137,7 @@ local function applyPCShader(enable: boolean)
 			
 			if not pcColorCorrection then
 				pcColorCorrection = Instance.new("ColorCorrectionEffect")
-				pcColorCorrection.Name = "NewScriptV47_PCColorCorrection"
+				pcColorCorrection.Name = "GummiHub_PCColorCorrection"
 				pcColorCorrection.Brightness = 0.05
 				pcColorCorrection.Contrast = 0.25
 				pcColorCorrection.Saturation = 0.35
@@ -144,7 +147,7 @@ local function applyPCShader(enable: boolean)
 
 			if not pcDepthOfField then
 				pcDepthOfField = Instance.new("DepthOfFieldEffect")
-				pcDepthOfField.Name = "NewScriptV47_PCDepthOfField"
+				pcDepthOfField.Name = "GummiHub_PCDepthOfField"
 				pcDepthOfField.FarIntensity = 0.2
 				pcDepthOfField.FocusDistance = 40
 				pcDepthOfField.InFocusRadius = 25
@@ -162,84 +165,18 @@ local function applyPCShader(enable: boolean)
 	end
 end
 
--- Hệ thống Fix Lag Ngược Sharder (V1, V2, V3)
-local function applyFixLag(mode: string)
-	pcall(function()
-		if mode == "Off" then
-			Lighting.GlobalShadows = true
-			for _, v in ipairs(workspace:GetDescendants()) do
-				if v:IsA("BasePart") then
-					v.Reflectance = 0
-				elseif v:IsA("Decal") or v:IsA("Texture") then
-					v.Transparency = 0
-				end
-			end
-		elseif mode == "V1_Light" then
-			Lighting.GlobalShadows = false
-			Lighting.FogEnd = 9e9
-			for _, v in ipairs(workspace:GetDescendants()) do
-				if v:IsA("Decal") or v:IsA("Texture") then
-					v.Transparency = 0.5
-				end
-			end
-		elseif mode == "V2_Medium" then
-			Lighting.GlobalShadows = false
-			Lighting.FogEnd = 5000
-			for _, v in ipairs(workspace:GetDescendants()) do
-				if v:IsA("BasePart") then
-					v.Material = Enum.Material.SmoothPlastic
-				elseif v:IsA("Decal") or v:IsA("Texture") then
-					v.Transparency = 1
-				end
-			end
-		elseif mode == "V3_Heavy" then
-			Lighting.GlobalShadows = false
-			Lighting.FogEnd = 2000
-			for _, v in ipairs(workspace:GetDescendants()) do
-				if v:IsA("BasePart") then
-					v.Material = Enum.Material.SmoothPlastic
-					v.Reflectance = 0
-					v.CastShadow = false
-				elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("ParticleEmitter") or v:IsA("Trail") then
-					v.Transparency = 1
-				end
-			end
-		end
-	end)
-end
-
--- Hệ thống Nhạc Cá Nhân (Client Music ID)
-local clientMusicSound: Sound? = nil
-local function playClientMusic(id: number)
-	if clientMusicSound then
-		clientMusicSound:Stop()
-		clientMusicSound:Destroy()
-		clientMusicSound = nil
-	end
-	
-	if id > 0 then
-		clientMusicSound = Instance.new("Sound")
-		clientMusicSound.Name = "NewScriptV47_ClientMusic"
-		clientMusicSound.SoundId = "rbxassetid://" .. tostring(id)
-		clientMusicSound.Volume = 2
-		clientMusicSound.Looped = true
-		clientMusicSound.Parent = SoundService
-		clientMusicSound:Play()
-	end
-end
-
 local function updateEspPlayers()
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p ~= player then
 			local char = p.Character
 			if char then
-				local highlight = char:FindFirstChild("NewScriptV47_ESP_Highlight")
-				local billboard = char:FindFirstChild("NewScriptV47_ESP_NameTag")
+				local highlight = char:FindFirstChild("GummiHub_ESP_Highlight")
+				local billboard = char:FindFirstChild("GummiHub_ESP_NameTag")
 				
 				if settings.EspPlayersEnabled then
 					if not highlight then
 						highlight = Instance.new("Highlight")
-						highlight.Name = "NewScriptV47_ESP_Highlight"
+						highlight.Name = "GummiHub_ESP_Highlight"
 						highlight.Adornee = char
 						highlight.FillColor = Color3.fromRGB(0, 255, 128)
 						highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
@@ -252,7 +189,7 @@ local function updateEspPlayers()
 						local head = char:FindFirstChild("Head") or char:FindFirstChild("HumanoidRootPart")
 						if head then
 							billboard = Instance.new("BillboardGui")
-							billboard.Name = "NewScriptV47_ESP_NameTag"
+							billboard.Name = "GummiHub_ESP_NameTag"
 							billboard.Size = UDim2.new(0, 100, 0, 40)
 							billboard.StudsOffset = Vector3.new(0, 2.5, 0)
 							billboard.AlwaysOnTop = true
@@ -276,33 +213,6 @@ local function updateEspPlayers()
 					if billboard then billboard:Destroy() end
 				end
 			end
-		end
-	end
-end
-
-local function updateRgbLed()
-	if settings.RgbLedEnabled then
-		local char = player.Character
-		if char then
-			local hue = (tick() % 5) / 5
-			local rainbowColor = Color3.fromHSV(hue, 1, 1)
-			local highlight = char:FindFirstChild("NewScriptV47_RGB_LED")
-			if not highlight then
-				highlight = Instance.new("Highlight")
-				highlight.Name = "NewScriptV47_RGB_LED"
-				highlight.Adornee = char
-				highlight.FillTransparency = 0.5
-				highlight.OutlineTransparency = 0
-				highlight.Parent = char
-			end
-			highlight.FillColor = rainbowColor
-			highlight.OutlineColor = rainbowColor
-		end
-	else
-		local char = player.Character
-		if char then
-			local highlight = char:FindFirstChild("NewScriptV47_RGB_LED")
-			if highlight then highlight:Destroy() end
 		end
 	end
 end
@@ -334,15 +244,19 @@ local function makeDraggable(guiObj: GuiObject)
 	end)
 end
 
--- NÚT BẬT/TẮT MENU CHÍNH (LOGO ヾ⁠(⁠˙⁠❥⁠˙⁠)⁠ﾉ)
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0, 55, 0, 55)
+-- Lấy Avatar người chơi duclinx làm Logo Menu
+local targetUserId = 2914197475
+pcall(function()
+	targetUserId = Players:GetUserIdFromNameAsync("duclinx")
+end)
+local avatarImageContent = Players:GetUserThumbnailAsync(targetUserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+
+-- NÚT BẬT/TẮT MENU CHÍNH (AVATAR DUCLINX)
+local toggleBtn = Instance.new("ImageButton")
+toggleBtn.Size = UDim2.new(0, 50, 0, 50)
 toggleBtn.Position = UDim2.new(0, 20, 0, 20)
 toggleBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-toggleBtn.Text = "ヾ(˙❥˙)ﾉ"
-toggleBtn.TextColor3 = Color3.fromRGB(255, 180, 200)
-toggleBtn.TextSize = 12
-toggleBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+toggleBtn.Image = avatarImageContent
 toggleBtn.Parent = screenGui
 Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(1, 0)
 local tStroke = Instance.new("UIStroke", toggleBtn)
@@ -350,16 +264,16 @@ tStroke.Thickness = 2.5
 tStroke.Color = Color3.fromRGB(255, 150, 180)
 makeDraggable(toggleBtn)
 
--- MENU CHÍNH
+-- MENU CHÍNH (GUMMI HUB)
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 360, 0, 480)
-mainFrame.Position = UDim2.new(0, 90, 0.5, -240)
+mainFrame.Size = UDim2.new(0, 500, 0, 360)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -180)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainFrame.BackgroundTransparency = 0.05
 mainFrame.ClipsDescendants = true
 mainFrame.Visible = settings.MenuVisible
 mainFrame.Parent = screenGui
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
 local mStroke = Instance.new("UIStroke", mainFrame)
 mStroke.Thickness = 2
 mStroke.Color = Color3.fromRGB(60, 60, 85)
@@ -369,284 +283,106 @@ toggleBtn.MouseButton1Click:Connect(function()
 	mainFrame.Visible = settings.MenuVisible
 end)
 
+-- Thanh tiêu đề
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 40)
+titleBar.Size = UDim2.new(1, 0, 0, 35)
 titleBar.BackgroundTransparency = 1
 titleBar.Parent = mainFrame
 makeDraggable(mainFrame)
 
 local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(1, -70, 1, 0)
+titleText.Size = UDim2.new(1, -100, 1, 0)
 titleText.Position = UDim2.new(0, 12, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "⚡ ヾ(˙❥˙)ﾉ EVADE V4.7 (PC SHADER 4K-8K)"
-titleText.TextColor3 = Color3.fromRGB(255, 200, 220)
-titleText.TextSize = 10
+titleText.Text = "GUMMI HUB [duclinx]"
+titleText.TextColor3 = Color3.fromRGB(255, 180, 200)
+titleText.TextSize = 12
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
 titleText.Parent = titleBar
 
 local minimizeBtn = Instance.new("TextButton")
-minimizeBtn.Size = UDim2.new(0, 28, 0, 28)
-minimizeBtn.Position = UDim2.new(1, -68, 0.5, -14)
+minimizeBtn.Size = UDim2.new(0, 26, 0, 26)
+minimizeBtn.Position = UDim2.new(1, -65, 0.5, -13)
 minimizeBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-minimizeBtn.Text = "▼"
+minimizeBtn.Text = "-"
 minimizeBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
-minimizeBtn.TextSize = 10
+minimizeBtn.TextSize = 12
 minimizeBtn.Parent = titleBar
 Instance.new("UICorner", minimizeBtn).CornerRadius = UDim.new(0, 6)
 
-local resizeModeBtn = Instance.new("TextButton")
-resizeModeBtn.Size = UDim2.new(0, 28, 0, 28)
-resizeModeBtn.Position = UDim2.new(1, -36, 0.5, -14)
-resizeModeBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-resizeModeBtn.Text = "🗖"
-resizeModeBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
-resizeModeBtn.TextSize = 10
-resizeModeBtn.Parent = titleBar
-Instance.new("UICorner", resizeModeBtn).CornerRadius = UDim.new(0, 6)
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 26, 0, 26)
+closeBtn.Position = UDim2.new(1, -33, 0.5, -13)
+closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextSize = 10
+closeBtn.Parent = titleBar
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
 
-local isFullScreen = false
-resizeModeBtn.MouseButton1Click:Connect(function()
-	isFullScreen = not isFullScreen
-	if isFullScreen then
-		mainFrame:TweenSize(UDim2.new(0.95, 0, 0.9, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-		mainFrame.Position = UDim2.new(0.025, 0, 0.05, 0)
-		resizeModeBtn.Text = "🗗"
-	else
-		mainFrame:TweenSize(UDim2.new(0, 360, 0, 480), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-		mainFrame.Position = UDim2.new(0, 90, 0.5, -240)
-		resizeModeBtn.Text = "🗖"
-	end
+closeBtn.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
 end)
 
-local scrollContainer = Instance.new("ScrollingFrame")
-scrollContainer.Size = UDim2.new(1, -16, 1, -55)
-scrollContainer.Position = UDim2.new(0, 8, 0, 45)
-scrollContainer.BackgroundTransparency = 1
-scrollContainer.CanvasSize = UDim2.new(0, 0, 0, 750)
-scrollContainer.ScrollBarThickness = 4
-scrollContainer.Parent = mainFrame
+-- Sidebar (Tab Menu bên trái)
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 130, 1, -45)
+sidebar.Position = UDim2.new(0, 8, 0, 40)
+sidebar.BackgroundTransparency = 1
+sidebar.Parent = mainFrame
 
-minimizeBtn.MouseButton1Click:Connect(function()
-	settings.MenuMinimized = not settings.MenuMinimized
-	if settings.MenuMinimized then
-		mainFrame:TweenSize(UDim2.new(0, 360, 0, 45), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-		scrollContainer.Visible = false
-		minimizeBtn.Text = "▲"
-	else
-		mainFrame:TweenSize(UDim2.new(0, 360, 0, 480), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
-		scrollContainer.Visible = true
-		minimizeBtn.Text = "▼"
-	end
-end)
+local tabContainer = Instance.new("Frame")
+tabContainer.Size = UDim2.new(1, -140, 1, -45)
+tabContainer.Position = UDim2.new(0, 138, 0, 40)
+tabContainer.BackgroundTransparency = 1
+tabContainer.Parent = mainFrame
 
-local function createSectionHeader(posY, text)
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -10, 0, 25)
-	label.Position = UDim2.new(0, 5, 0, posY)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.TextColor3 = Color3.fromRGB(255, 180, 200)
-	label.TextSize = 10
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-	label.Parent = scrollContainer
+local function createTabPage()
+	local page = Instance.new("ScrollingFrame")
+	page.Size = UDim2.new(1, 0, 1, 0)
+	page.BackgroundTransparency = 1
+	page.CanvasSize = UDim2.new(0, 0, 0, 450)
+	page.ScrollBarThickness = 3
+	page.Visible = false
+	page.Parent = tabContainer
+	return page
 end
 
-local function createToggle(posY, text, stateVar)
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, -10, 0, 36)
-	frame.Position = UDim2.new(0, 5, 0, posY)
-	frame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-	frame.Parent = scrollContainer
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-	
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0, 200, 1, 0)
-	label.Position = UDim2.new(0, 12, 0, 0)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.TextColor3 = Color3.fromRGB(210, 210, 225)
-	label.TextSize = 10
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-	label.Parent = frame
+local pageSettings = createTabPage()
+local pagePlayers = createTabPage()
+local pageCre = createTabPage()
 
+pageSettings.Visible = true
+
+local function createTabButton(posY, text, targetPage)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 48, 0, 24)
-	btn.Position = UDim2.new(1, -58, 0.5, -12)
-	btn.BackgroundColor3 = settings[stateVar] and Color3.fromRGB(40, 180, 100) or Color3.fromRGB(45, 45, 55)
-	btn.Text = ""
-	btn.Parent = frame
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+	btn.Size = UDim2.new(1, 0, 0, 36)
+	btn.Position = UDim2.new(0, 0, 0, posY)
+	btn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(210, 210, 225)
+	btn.TextSize = 11
+	btn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+	btn.Parent = sidebar
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
 	
-	local indicator = Instance.new("Frame")
-	indicator.Size = UDim2.new(0, 16, 0, 16)
-	indicator.Position = settings[stateVar] and UDim2.new(1, -20, 0, 4) or UDim2.new(0, 4, 0, 4)
-	indicator.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-	indicator.Parent = btn
-	Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
-
 	btn.MouseButton1Click:Connect(function()
-		settings[stateVar] = not settings[stateVar]
-		local val = settings[stateVar]
-		if val then
-			btn.BackgroundColor3 = Color3.fromRGB(40, 180, 100)
-			indicator.Position = UDim2.new(1, -20, 0, 4)
-		else
-			btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
-			indicator.Position = UDim2.new(0, 4, 0, 4)
-		end
-		
-		if stateVar == "AfkFarmSky" and not val then
-			updateAfkPlatform(false)
-		end
-		if stateVar == "RgbLedEnabled" and not val then
-			updateRgbLed()
-		end
-		if stateVar == "UltraShaderEnabled" then
-			applyPCShader(val)
-		end
-		if stateVar == "EspPlayersEnabled" and not val then
-			updateEspPlayers()
-		end
-		if stateVar == "CustomMusicEnabled" then
-			if val then
-				playClientMusic(settings.CustomMusicId)
-			else
-				playClientMusic(0)
-			end
-		end
+		pageSettings.Visible = false
+		pagePlayers.Visible = false
+		pageCre.Visible = false
+		targetPage.Visible = true
 	end)
 end
 
-local function createDropdown(posY, text, options, currentVal, callback)
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, -10, 0, 36)
-	frame.Position = UDim2.new(0, 5, 0, posY)
-	frame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-	frame.Parent = scrollContainer
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-	
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0, 160, 1, 0)
-	label.Position = UDim2.new(0, 12, 0, 0)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.TextColor3 = Color3.fromRGB(210, 210, 225)
-	label.TextSize = 10
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-	label.Parent = frame
+createTabButton(0, "⚙️ Settings", pageSettings)
+createTabButton(45, "👥 Players", pagePlayers)
+createTabButton(90, "📜 Cre", pageCre)
 
-	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 110, 0, 24)
-	btn.Position = UDim2.new(1, -120, 0.5, -12)
-	btn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-	btn.Text = currentVal
-	btn.TextColor3 = Color3.fromRGB(240, 240, 240)
-	btn.TextSize = 10
-	btn.FontFace = Font.new("rbxasset://fonts/families/GothamMedium.json")
-	btn.Parent = frame
-	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
-
-	local currentIndex = 1
-	for i, opt in ipairs(options) do
-		if opt == currentVal then
-			currentIndex = i
-			break
-		end
-	end
-
-	btn.MouseButton1Click:Connect(function()
-		currentIndex = currentIndex + 1
-		if currentIndex > #options then
-			currentIndex = 1
-		end
-		local selected = options[currentIndex]
-		btn.Text = selected
-		callback(selected)
-	end)
-end
-
-local function createSizeInput(posY, text, defaultVal, callback)
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, -10, 0, 36)
-	frame.Position = UDim2.new(0, 5, 0, posY)
-	frame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-	frame.Parent = scrollContainer
-	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
-	
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(0, 180, 1, 0)
-	label.Position = UDim2.new(0, 12, 0, 0)
-	label.BackgroundTransparency = 1
-	label.Text = text
-	label.TextColor3 = Color3.fromRGB(210, 210, 225)
-	label.TextSize = 10
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-	label.Parent = frame
-
-	local box = Instance.new("TextBox")
-	box.Size = UDim2.new(0, 85, 0, 24)
-	box.Position = UDim2.new(1, -95, 0.5, -12)
-	box.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-	box.Text = tostring(defaultVal)
-	box.TextColor3 = Color3.fromRGB(240, 240, 240)
-	box.TextSize = 10
-	box.FontFace = Font.new("rbxasset://fonts/families/GothamMedium.json")
-	box.Parent = frame
-	Instance.new("UICorner", box).CornerRadius = UDim.new(0, 6)
-
-	box.FocusLost:Connect(function()
-		local num = tonumber(box.Text)
-		if num then
-			callback(num)
-		else
-			box.Text = tostring(defaultVal)
-		end
-	end)
-end
-
-createSectionHeader(0, "✨ MỤC PLAYERS & TÙY CHỈNH 4 NGÓN")
-createToggle(25, "🔒 Khóa Nút (Tránh Chạm Nhầm)", "LockButtons")
-createToggle(63, "👁️ ESP Players (Phát Sáng & Tên)", "EspPlayersEnabled")
-createToggle(101, "⚡ Auto Jump (Nhảy tự động)", "AutoJumpEnabled")
-createToggle(139, "⚡ Lag Switch Khựng Màn Hình", "LagSwitchActive")
-createToggle(177, "🧲 Teleport Tới Bubbles Mới & Ở Lại", "AutoCollectBubbles")
-createToggle(215, "🚀 AFK Farm 1500m + Khối", "AfkFarmSky")
-
-createSectionHeader(253, "💎 MỤC ĐỒ HỌA PC 4K-8K & FIX LAG V1-V3")
-createToggle(278, "🌟 Shader 4K-8K Đẳng Cấp PC (Ultra)", "UltraShaderEnabled")
-createDropdown(316, "🚀 Chế Độ Fix Lag (Ngược Sharder)", {"Off", "V1_Light", "V2_Medium", "V3_Heavy"}, settings.FixLagMode, function(val)
-	settings.FixLagMode = val
-	applyFixLag(val)
-end)
-
-createSectionHeader(354, "🎵 MỤC ÂM THANH NHẠC CÁ NHÂN")
-createToggle(379, "🎶 Bật Nhạc Riêng (Chỉ Bạn Nghe)", "CustomMusicEnabled")
-createSizeInput(417, "🎧 Nhập ID Nhạc Roblox", settings.CustomMusicId, function(val)
-	settings.CustomMusicId = val
-	if settings.CustomMusicEnabled then
-		playClientMusic(val)
-	end
-end)
-
-createSectionHeader(455, "⚙️ MỤC SETTINGS & TỐI ƯU")
-createToggle(480, "🌈 RGB LED Đổi Màu Nhân Vật", "RgbLedEnabled")
-createToggle(518, "✨ Menu RGB Đổi Màu Giao Diện", "MenuRgbEnabled")
-createToggle(556, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
-
-createSizeInput(594, "⏱️ Giây Lag Switch", settings.LagSwitchSeconds, function(val)
-	settings.LagSwitchSeconds = val
-end)
-
--- NÚT AUTO JUMP NỔI
+-- NÚT TÁCH RIÊNG KHỞI TẠO LUÔN
 local jumpFloatingBtn = Instance.new("TextButton")
-jumpFloatingBtn.Size = UDim2.new(0, 140, 0, 45)
-jumpFloatingBtn.Position = UDim2.new(0.75, 0, 0.55, 0)
+jumpFloatingBtn.Size = UDim2.new(0, 130, 0, 40)
+jumpFloatingBtn.Position = UDim2.new(0.75, 0, 0.35, 0)
 jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
 jumpFloatingBtn.Text = "AUTO JUMP: OFF"
@@ -655,9 +391,6 @@ jumpFloatingBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
 jumpFloatingBtn.Visible = false
 jumpFloatingBtn.Parent = screenGui
 Instance.new("UICorner", jumpFloatingBtn).CornerRadius = UDim.new(0, 8)
-local jStroke = Instance.new("UIStroke", jumpFloatingBtn)
-jStroke.Thickness = 1.5
-jStroke.Color = Color3.fromRGB(100, 100, 120)
 makeDraggable(jumpFloatingBtn)
 
 jumpFloatingBtn.MouseButton1Click:Connect(function()
@@ -674,9 +407,269 @@ jumpFloatingBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- Điền nội dung cho Tab Settings
+local function createToggle(parent, posY, text, stateVar)
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -10, 0, 34)
+	frame.Position = UDim2.new(0, 5, 0, posY)
+	frame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	frame.Parent = parent
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0, 190, 1, 0)
+	label.Position = UDim2.new(0, 10, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(210, 210, 225)
+	label.TextSize = 10
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+	label.Parent = frame
+
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 44, 0, 22)
+	btn.Position = UDim2.new(1, -52, 0.5, -11)
+	btn.BackgroundColor3 = settings[stateVar] and Color3.fromRGB(40, 180, 100) or Color3.fromRGB(45, 45, 55)
+	btn.Text = ""
+	btn.Parent = frame
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+	
+	local indicator = Instance.new("Frame")
+	indicator.Size = UDim2.new(0, 14, 0, 14)
+	indicator.Position = settings[stateVar] and UDim2.new(1, -18, 0, 4) or UDim2.new(0, 4, 0, 4)
+	indicator.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+	indicator.Parent = btn
+	Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
+
+	btn.MouseButton1Click:Connect(function()
+		settings[stateVar] = not settings[stateVar]
+		local val = settings[stateVar]
+		if val then
+			btn.BackgroundColor3 = Color3.fromRGB(40, 180, 100)
+			indicator.Position = UDim2.new(1, -18, 0, 4)
+		else
+			btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+			indicator.Position = UDim2.new(0, 4, 0, 4)
+		end
+		
+		if stateVar == "UltraShaderEnabled" then
+			applyPCShader(val)
+		end
+		if stateVar == "EspPlayersEnabled" and not val then
+			updateEspPlayers()
+		end
+		if stateVar == "AutoJumpEnabled" then
+			jumpFloatingBtn.Visible = val
+			if not val then
+				jumpFloatingBtn:SetAttribute("IsActive", false)
+				jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+				jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+				jumpFloatingBtn.Text = "AUTO JUMP: OFF"
+			end
+		end
+	end)
+end
+
+createToggle(pageSettings, 0, "⚡ Auto Jump", "AutoJumpEnabled")
+createToggle(pageSettings, 40, "🌟 PC Shader 4K-8K", "UltraShaderEnabled")
+createToggle(pageSettings, 80, "🌈 Menu RGB Animation", "MenuRgbEnabled")
+createToggle(pageSettings, 120, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
+
+-- Ghi chú cho tính năng Auto C/Control đang bị vô hiệu hoá tạm thời
+local disabledNoteLabel = Instance.new("TextLabel")
+disabledNoteLabel.Size = UDim2.new(1, -10, 0, 28)
+disabledNoteLabel.Position = UDim2.new(0, 5, 0, 165)
+disabledNoteLabel.BackgroundTransparency = 1
+disabledNoteLabel.Text = "⚠️ Auto C/Control: Tính năng tạm thời bị vô hiệu hoá"
+disabledNoteLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+disabledNoteLabel.TextSize = 9
+disabledNoteLabel.TextXAlignment = Enum.TextXAlignment.Left
+disabledNoteLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+disabledNoteLabel.Parent = pageSettings
+
+-- Điền nội dung cho Tab Players
+createToggle(pagePlayers, 0, "👁️ ESP Players (Highlight)", "EspPlayersEnabled")
+createToggle(pagePlayers, 40, "🔒 Khóa Vị Trí Nút", "LockButtons")
+createToggle(pagePlayers, 80, "⚡ Lag Switch Khựng Màn Hình", "LagSwitchActive")
+createToggle(pagePlayers, 120, "🧲 Teleport Tới Bubbles", "AutoCollectBubbles")
+createToggle(pagePlayers, 160, "🚀 AFK Farm 1500m + Khối", "AfkFarmSky")
+
+-- Điền nội dung cho Tab Cre
+local creLabel = Instance.new("TextLabel")
+creLabel.Size = UDim2.new(1, -10, 1, 0)
+creLabel.Position = UDim2.new(0, 5, 0, 0)
+creLabel.BackgroundTransparency = 1
+creLabel.Text = "GUMMI HUB\nDeveloper: duclinx\nSpecial Thanks for UI & Features Upgrade!"
+creLabel.TextColor3 = Color3.fromRGB(255, 180, 200)
+creLabel.TextSize = 11
+creLabel.TextXAlignment = Enum.TextXAlignment.Center
+creLabel.TextYAlignment = Enum.TextYAlignment.Center
+creLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+creLabel.Parent = pageCre
+
+minimizeBtn.MouseButton1Click:Connect(function()
+	settings.MenuMinimized = not settings.MenuMinimized
+	if settings.MenuMinimized then
+		mainFrame:TweenSize(UDim2.new(0, 500, 0, 35), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+		sidebar.Visible = false
+		tabContainer.Visible = false
+		minimizeBtn.Text = "+"
+	else
+		mainFrame:TweenSize(UDim2.new(0, 500, 0, 360), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+		sidebar.Visible = true
+		tabContainer.Visible = true
+		minimizeBtn.Text = "-"
+	end
+end)
+
+-- NÚT TÁCH RIÊNG KHỞI TẠO LUÔN
+local jumpFloatingBtn = Instance.new("TextButton")
+jumpFloatingBtn.Size = UDim2.new(0, 130, 0, 40)
+jumpFloatingBtn.Position = UDim2.new(0.75, 0, 0.35, 0)
+jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+jumpFloatingBtn.Text = "AUTO JUMP: OFF"
+jumpFloatingBtn.TextSize = 10
+jumpFloatingBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+jumpFloatingBtn.Visible = false
+jumpFloatingBtn.Parent = screenGui
+Instance.new("UICorner", jumpFloatingBtn).CornerRadius = UDim.new(0, 8)
+makeDraggable(jumpFloatingBtn)
+
+jumpFloatingBtn.MouseButton1Click:Connect(function()
+	local activeState = not jumpFloatingBtn:GetAttribute("IsActive")
+	jumpFloatingBtn:SetAttribute("IsActive", activeState)
+	if activeState then
+		jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 100)
+		jumpFloatingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		jumpFloatingBtn.Text = "AUTO JUMP: ON"
+	else
+		jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+		jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+		jumpFloatingBtn.Text = "AUTO JUMP: OFF"
+	end
+end)
+
+-- Điền nội dung cho Tab Settings
+local function createToggle(parent, posY, text, stateVar)
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(1, -10, 0, 34)
+	frame.Position = UDim2.new(0, 5, 0, posY)
+	frame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	frame.Parent = parent
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(0, 190, 1, 0)
+	label.Position = UDim2.new(0, 10, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = Color3.fromRGB(210, 210, 225)
+	label.TextSize = 10
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+	label.Parent = frame
+
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 44, 0, 22)
+	btn.Position = UDim2.new(1, -52, 0.5, -11)
+	btn.BackgroundColor3 = settings[stateVar] and Color3.fromRGB(40, 180, 100) or Color3.fromRGB(45, 45, 55)
+	btn.Text = ""
+	btn.Parent = frame
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+	
+	local indicator = Instance.new("Frame")
+	indicator.Size = UDim2.new(0, 14, 0, 14)
+	indicator.Position = settings[stateVar] and UDim2.new(1, -18, 0, 4) or UDim2.new(0, 4, 0, 4)
+	indicator.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+	indicator.Parent = btn
+	Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
+
+	btn.MouseButton1Click:Connect(function()
+		settings[stateVar] = not settings[stateVar]
+		local val = settings[stateVar]
+		if val then
+			btn.BackgroundColor3 = Color3.fromRGB(40, 180, 100)
+			indicator.Position = UDim2.new(1, -18, 0, 4)
+		else
+			btn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+			indicator.Position = UDim2.new(0, 4, 0, 4)
+		end
+		
+		if stateVar == "UltraShaderEnabled" then
+			applyPCShader(val)
+		end
+		if stateVar == "EspPlayersEnabled" and not val then
+			updateEspPlayers()
+		end
+		if stateVar == "AutoJumpEnabled" then
+			jumpFloatingBtn.Visible = val
+			if not val then
+				jumpFloatingBtn:SetAttribute("IsActive", false)
+				jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+				jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+				jumpFloatingBtn.Text = "AUTO JUMP: OFF"
+			end
+		end
+	end)
+end
+
+createToggle(pageSettings, 0, "⚡ Auto Jump", "AutoJumpEnabled")
+createToggle(pageSettings, 40, "🌟 PC Shader 4K-8K", "UltraShaderEnabled")
+createToggle(pageSettings, 80, "🌈 Menu RGB Animation", "MenuRgbEnabled")
+createToggle(pageSettings, 120, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
+
+-- Ghi chú cho tính năng Auto C/Control đang bị vô hiệu hoá tạm thời
+local disabledNoteLabel = Instance.new("TextLabel")
+disabledNoteLabel.Size = UDim2.new(1, -10, 0, 28)
+disabledNoteLabel.Position = UDim2.new(0, 5, 0, 165)
+disabledNoteLabel.BackgroundTransparency = 1
+disabledNoteLabel.Text = "⚠️ Auto C/Control: Tính năng tạm thời bị vô hiệu hoá"
+disabledNoteLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+disabledNoteLabel.TextSize = 9
+disabledNoteLabel.TextXAlignment = Enum.TextXAlignment.Left
+disabledNoteLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+disabledNoteLabel.Parent = pageSettings
+
+-- Điền nội dung cho Tab Players
+createToggle(pagePlayers, 0, "👁️ ESP Players (Highlight)", "EspPlayersEnabled")
+createToggle(pagePlayers, 40, "🔒 Khóa Vị Trí Nút", "LockButtons")
+createToggle(pagePlayers, 80, "⚡ Lag Switch Khựng Màn Hình", "LagSwitchActive")
+createToggle(pagePlayers, 120, "🧲 Teleport Tới Bubbles", "AutoCollectBubbles")
+createToggle(pagePlayers, 160, "🚀 AFK Farm 1500m + Khối", "AfkFarmSky")
+
+-- Điền nội dung cho Tab Cre
+local creLabel = Instance.new("TextLabel")
+creLabel.Size = UDim2.new(1, -10, 1, 0)
+creLabel.Position = UDim2.new(0, 5, 0, 0)
+creLabel.BackgroundTransparency = 1
+creLabel.Text = "GUMMI HUB\nDeveloper: duclinx\nSpecial Thanks for UI & Features Upgrade!"
+creLabel.TextColor3 = Color3.fromRGB(255, 180, 200)
+creLabel.TextSize = 11
+creLabel.TextXAlignment = Enum.TextXAlignment.Center
+creLabel.TextYAlignment = Enum.TextYAlignment.Center
+creLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+creLabel.Parent = pageCre
+
+minimizeBtn.MouseButton1Click:Connect(function()
+	settings.MenuMinimized = not settings.MenuMinimized
+	if settings.MenuMinimized then
+		mainFrame:TweenSize(UDim2.new(0, 500, 0, 35), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+		sidebar.Visible = false
+		tabContainer.Visible = false
+		minimizeBtn.Text = "+"
+	else
+		mainFrame:TweenSize(UDim2.new(0, 500, 0, 360), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+		sidebar.Visible = true
+		tabContainer.Visible = true
+		minimizeBtn.Text = "-"
+	end
+end)
+
 -- NÚT LAG SWITCH NỔI
 local lagSwitchFloatingBtn = Instance.new("TextButton")
-lagSwitchFloatingBtn.Size = UDim2.new(0, 150, 0, 45)
+lagSwitchFloatingBtn.Size = UDim2.new(0, 150, 0, 40)
 lagSwitchFloatingBtn.Position = UDim2.new(0.5, -75, 0.75, 0)
 lagSwitchFloatingBtn.BackgroundColor3 = Color3.fromRGB(180, 95, 20)
 lagSwitchFloatingBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
@@ -713,81 +706,27 @@ lagSwitchFloatingBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
-local statsLabel = Instance.new("TextLabel")
-statsLabel.Size = UDim2.new(0, 140, 0, 36)
-statsLabel.Position = UDim2.new(1, -150, 0, 20)
-statsLabel.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-statsLabel.TextColor3 = Color3.fromRGB(255, 180, 200)
-statsLabel.TextSize = 9
-statsLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-statsLabel.Parent = screenGui
-Instance.new("UICorner", statsLabel).CornerRadius = UDim.new(0, 8)
-
-local lastTick = tick()
-local frameCount = 0
-local fps = 60
-
 local processedBubbles = {}
 local lastBubbleCheck = 0
 
-RunService.RenderStepped:Connect(function(dt)
-	frameCount += 1
-	if tick() - lastTick >= 1 then
-		fps = frameCount
-        frameCount = 0
-		lastTick = tick()
-	end
-	
-	statsLabel.Text = string.format("FPS: %d\nPlayers: %d", fps, #Players:GetPlayers())
-	
-	jumpFloatingBtn.Visible = settings.AutoJumpEnabled
+RunService.RenderStepped:Connect(function()
 	lagSwitchFloatingBtn.Visible = settings.LagSwitchActive
+
+	if settings.MenuRgbEnabled then
+		local hue = (tick() % 4) / 4
+		local rainbowColor = Color3.fromHSV(hue, 1, 1)
+		mStroke.Color = rainbowColor
+		tStroke.Color = rainbowColor
+	else
+		mStroke.Color = Color3.fromRGB(60, 60, 85)
+		tStroke.Color = Color3.fromRGB(255, 150, 180)
+	end
 
 	if settings.EspPlayersEnabled then
 		updateEspPlayers()
 	end
 
-	if settings.MenuRgbEnabled or settings.RgbLedEnabled then
-		local hue = (tick() % 4) / 4
-		local rainbowColor = Color3.fromHSV(hue, 1, 1)
-		
-		if settings.MenuRgbEnabled then
-			mStroke.Color = rainbowColor
-			tStroke.Color = rainbowColor
-		else
-			mStroke.Color = Color3.fromRGB(60, 60, 85)
-			tStroke.Color = Color3.fromRGB(255, 150, 180)
-		end
-
-		if settings.RgbLedEnabled then
-			updateRgbLed()
-		end
-	else
-		mStroke.Color = Color3.fromRGB(60, 60, 85)
-		tStroke.Color = Color3.fromRGB(255, 150, 180)
-		local char = player.Character
-		if char then
-			local highlight = char:FindFirstChild("NewScriptV47_RGB_LED")
-			if highlight then highlight:Destroy() end
-		end
-	end
-
-	-- Xử lý Nhạc Cá Nhân
-	if settings.CustomMusicEnabled then
-		if not clientMusicSound or not clientMusicSound.IsPlaying then
-			if settings.CustomMusicId > 0 then
-				playClientMusic(settings.CustomMusicId)
-			end
-		end
-	else
-		if clientMusicSound then
-			clientMusicSound:Stop()
-			clientMusicSound:Destroy()
-			clientMusicSound = nil
-		end
-	end
-
-	-- Afk Farm Sky
+	-- Afk Farm Sky & Bubbles
 	if settings.AfkFarmSky then
 		updateAfkPlatform(true)
 		local char = player.Character
@@ -801,7 +740,6 @@ RunService.RenderStepped:Connect(function(dt)
 	else
 		updateAfkPlatform(false)
 		
-		-- Smart Teleport tới Bubbles mới
 		if settings.AutoCollectBubbles and (tick() - lastBubbleCheck >= 0.8) then
 			lastBubbleCheck = tick()
 			task.spawn(function()
@@ -828,16 +766,17 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 
-	-- Auto Jump logic
 	local char = player.Character
 	if char and not settings.AfkFarmSky then
 		local humanoid = char:FindFirstChildOfClass("Humanoid")
 		if humanoid then
+			-- Auto Jump logic
 			if settings.AutoJumpEnabled and (jumpFloatingBtn:GetAttribute("IsActive") == true) then
 				if humanoid.FloorMaterial ~= Enum.Material.Air and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
 					humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 				end
 			end
+			-- Auto Slide/C/Control đã bị vô hiệu hoá hoàn toàn theo yêu cầu.
 		end
 	end
 end)
