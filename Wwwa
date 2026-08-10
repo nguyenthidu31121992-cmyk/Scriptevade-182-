@@ -1,6 +1,6 @@
 --!strict
 --[[
-    GUMMI HUB (Ultra Next-Gen 4K-8K PC-Level Shader & Tab System - Updated 10 Levels Extreme)
+    GUMMI HUB (Ultra Next-Gen 4K-8K PC-Level Shader & Dual Style Shader Selection - Fixed UI Visibility & CoreGui Safety)
 --]]
 
 local Players = game:GetService("Players")
@@ -11,13 +11,14 @@ local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
 
 local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
 local settings = {
 	MenuVisible = true,
 	MenuMinimized = false,
 	AutoJumpEnabled = false,
 	SpeedBoostEnabled = false,
-	SpeedLevel = 10, -- Mặc định mức 10 theo yêu cầu mới
+	SpeedLevel = 10,
 	BypassSpeedEnabled = false,
 	LagSwitchActive = false,
 	LagSwitchSeconds = 1,
@@ -28,18 +29,33 @@ local settings = {
 	LockButtons = false,
 	EspPlayersEnabled = false,
 	UltraShaderEnabled = false,
+	ShaderMode = "Video 1 (Cinematic Blue/Green)",
 }
 
-if CoreGui:FindFirstChild("GummiHub_Gui") then
-	CoreGui.GummiHub_Gui:Destroy()
+-- Khắc phục lỗi không hiện menu bằng cách ưu tiên PlayerGui (phòng trường hợp CoreGui bị chặn cấp quyền)
+local successCore, err = pcall(function()
+	if CoreGui:FindFirstChild("GummiHub_Gui") then
+		CoreGui.GummiHub_Gui:Destroy()
+	end
+end)
+
+if playerGui:FindFirstChild("GummiHub_Gui") then
+	playerGui.GummiHub_Gui:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "GummiHub_Gui"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
-local playerGui = player:WaitForChild("PlayerGui")
-screenGui.Parent = playerGui
+screenGui.DisplayOrder = 999999
+
+local parentSuccess = pcall(function()
+	screenGui.Parent = CoreGui
+end)
+
+if not parentSuccess then
+	screenGui.Parent = playerGui
+end
 
 -- Chống AFK
 task.spawn(function()
@@ -80,7 +96,7 @@ local function updateAfkPlatform(create: boolean)
 	end
 end
 
--- Hệ thống Shader PC
+-- Hệ thống Shader PC kết hợp 4K-8K và 2 phong cách từ video
 local pcAtmosphere: Atmosphere? = nil
 local pcBloom: BloomEffect? = nil
 local pcSunRays: SunRaysEffect? = nil
@@ -92,58 +108,106 @@ local function applyPCShader(enable: boolean)
 		pcall(function()
 			Lighting.GlobalShadows = true
 			Lighting.Technology = Enum.Technology.Future
-			Lighting.EnvironmentDiffuseScale = 1.5
-			Lighting.EnvironmentSpecularScale = 1.5
-			Lighting.OutdoorAmbient = Color3.fromRGB(70, 80, 100)
-			Lighting.Ambient = Color3.fromRGB(30, 35, 45)
-			Lighting.Brightness = 2.2
-			Lighting.ClockTime = 14.5
+			Lighting.EnvironmentDiffuseScale = 1.8
+			Lighting.EnvironmentSpecularScale = 1.8
 			
-			if not pcAtmosphere then
-				pcAtmosphere = Instance.new("Atmosphere")
-				pcAtmosphere.Name = "GummiHub_PCAtmosphere"
-				pcAtmosphere.Density = 0.38
-				pcAtmosphere.Offset = 0.15
-				pcAtmosphere.Color = Color3.fromRGB(190, 210, 245)
-				pcAtmosphere.Decay = Color3.fromRGB(60, 70, 100)
-				pcAtmosphere.Glare = 0.6
-				pcAtmosphere.Haze = 1.8
-				pcAtmosphere.Parent = Lighting
-			end
-			
-			if not pcBloom then
-				pcBloom = Instance.new("BloomEffect")
-				pcBloom.Name = "GummiHub_PCBloom"
-				pcBloom.Intensity = 0.85
-				pcBloom.Size = 40
-				pcBloom.Threshold = 0.8
-				pcBloom.Parent = Lighting
-			end
-			
-			if not pcSunRays then
-				pcSunRays = Instance.new("SunRaysEffect")
-				pcSunRays.Name = "GummiHub_PCSunRays"
-				pcSunRays.Intensity = 0.45
-				pcSunRays.Spread = 1
-				pcSunRays.Parent = Lighting
-			end
-			
-			if not pcColorCorrection then
-				pcColorCorrection = Instance.new("ColorCorrectionEffect")
-				pcColorCorrection.Name = "GummiHub_PCColorCorrection"
-				pcColorCorrection.Brightness = 0.05
-				pcColorCorrection.Contrast = 0.25
-				pcColorCorrection.Saturation = 0.35
-				pcColorCorrection.TintColor = Color3.fromRGB(255, 248, 240)
-				pcColorCorrection.Parent = Lighting
+			if settings.ShaderMode == "Video 1 (Cinematic Blue/Green)" then
+				Lighting.OutdoorAmbient = Color3.fromRGB(60, 80, 110)
+				Lighting.Ambient = Color3.fromRGB(20, 30, 45)
+				Lighting.Brightness = 2.5
+				Lighting.ClockTime = 13.5
+				
+				if not pcAtmosphere then
+					pcAtmosphere = Instance.new("Atmosphere")
+					pcAtmosphere.Name = "GummiHub_PCAtmosphere"
+					pcAtmosphere.Density = 0.35
+					pcAtmosphere.Offset = 0.1
+					pcAtmosphere.Color = Color3.fromRGB(150, 190, 255)
+					pcAtmosphere.Decay = Color3.fromRGB(40, 50, 90)
+					pcAtmosphere.Glare = 0.7
+					pcAtmosphere.Haze = 1.5
+					pcAtmosphere.Parent = Lighting
+				end
+				
+				if not pcBloom then
+					pcBloom = Instance.new("BloomEffect")
+					pcBloom.Name = "GummiHub_PCBloom"
+					pcBloom.Intensity = 1.1
+					pcBloom.Size = 45
+					pcBloom.Threshold = 0.75
+					pcBloom.Parent = Lighting
+				end
+				
+				if not pcSunRays then
+					pcSunRays = Instance.new("SunRaysEffect")
+					pcSunRays.Name = "GummiHub_PCSunRays"
+					pcSunRays.Intensity = 0.5
+					pcSunRays.Spread = 1
+					pcSunRays.Parent = Lighting
+				end
+				
+				if not pcColorCorrection then
+					pcColorCorrection = Instance.new("ColorCorrectionEffect")
+					pcColorCorrection.Name = "GummiHub_PCColorCorrection"
+					pcColorCorrection.Brightness = 0.08
+					pcColorCorrection.Contrast = 0.32
+					pcColorCorrection.Saturation = 0.45
+					pcColorCorrection.TintColor = Color3.fromRGB(235, 245, 255)
+					pcColorCorrection.Parent = Lighting
+				end
+
+			else
+				Lighting.OutdoorAmbient = Color3.fromRGB(110, 100, 80)
+				Lighting.Ambient = Color3.fromRGB(50, 45, 35)
+				Lighting.Brightness = 3.0
+				Lighting.ClockTime = 15.0
+				
+				if not pcAtmosphere then
+					pcAtmosphere = Instance.new("Atmosphere")
+					pcAtmosphere.Name = "GummiHub_PCAtmosphere"
+					pcAtmosphere.Density = 0.25
+					pcAtmosphere.Offset = 0.2
+					pcAtmosphere.Color = Color3.fromRGB(255, 235, 200)
+					pcAtmosphere.Decay = Color3.fromRGB(90, 70, 50)
+					pcAtmosphere.Glare = 0.8
+					pcAtmosphere.Haze = 1.2
+					pcAtmosphere.Parent = Lighting
+				end
+				
+				if not pcBloom then
+					pcBloom = Instance.new("BloomEffect")
+					pcBloom.Name = "GummiHub_PCBloom"
+					pcBloom.Intensity = 0.9
+					pcBloom.Size = 35
+					pcBloom.Threshold = 0.7
+					pcBloom.Parent = Lighting
+				end
+				
+				if not pcSunRays then
+					pcSunRays = Instance.new("SunRaysEffect")
+					pcSunRays.Name = "GummiHub_PCSunRays"
+					pcSunRays.Intensity = 0.6
+					pcSunRays.Spread = 0.9
+					pcSunRays.Parent = Lighting
+				end
+				
+				if not pcColorCorrection then
+					pcColorCorrection = Instance.new("ColorCorrectionEffect")
+					pcColorCorrection.Name = "GummiHub_PCColorCorrection"
+					pcColorCorrection.Brightness = 0.15
+					pcColorCorrection.Contrast = 0.38
+					pcColorCorrection.Saturation = 0.5
+					pcColorCorrection.TintColor = Color3.fromRGB(255, 242, 220)
+					pcColorCorrection.Parent = Lighting
+				end
 			end
 
 			if not pcDepthOfField then
 				pcDepthOfField = Instance.new("DepthOfFieldEffect")
 				pcDepthOfField.Name = "GummiHub_PCDepthOfField"
-				pcDepthOfField.FarIntensity = 0.2
-				pcDepthOfField.FocusDistance = 40
-				pcDepthOfField.InFocusRadius = 25
+				pcDepthOfField.FarIntensity = 0.25
+				pcDepthOfField.FocusDistance = 35
+				pcDepthOfField.InFocusRadius = 20
 				pcDepthOfField.Parent = Lighting
 			end
 		end)
@@ -258,8 +322,8 @@ makeDraggable(toggleBtn)
 
 -- MENU CHÍNH
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 500, 0, 360)
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -180)
+mainFrame.Size = UDim2.new(0, 500, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainFrame.BackgroundTransparency = 0.05
 mainFrame.ClipsDescendants = true
@@ -332,7 +396,7 @@ local function createTabPage()
 	local page = Instance.new("ScrollingFrame")
 	page.Size = UDim2.new(1, 0, 1, 0)
 	page.BackgroundTransparency = 1
-	page.CanvasSize = UDim2.new(0, 0, 0, 520)
+	page.CanvasSize = UDim2.new(0, 0, 0, 580)
 	page.ScrollBarThickness = 3
 	page.Visible = false
 	page.Parent = tabContainer
@@ -463,7 +527,7 @@ end
 createToggle(pageSettings, 0, "⚡ Auto Jump", "AutoJumpEnabled")
 createToggle(pageSettings, 40, "🏃‍♂️ Speed Boost (Chạy Nhanh)", "SpeedBoostEnabled")
 
--- Thanh điều chỉnh 10 mức Speed Level (Từ nhẹ đến cực hạn: Mức 1 tới Mức 10)
+-- Thanh điều chỉnh 10 mức Speed Level
 local speedLevelFrame = Instance.new("Frame")
 speedLevelFrame.Size = UDim2.new(1, -10, 0, 34)
 speedLevelFrame.Position = UDim2.new(0, 5, 0, 80)
@@ -520,12 +584,55 @@ end)
 
 createToggle(pageSettings, 120, "🔓 Bypass Speed (Ép Tốc Độ Hoạt Động)", "BypassSpeedEnabled")
 createToggle(pageSettings, 160, "🌟 PC Shader 4K-8K", "UltraShaderEnabled")
-createToggle(pageSettings, 200, "🌈 Menu RGB Animation", "MenuRgbEnabled")
-createToggle(pageSettings, 240, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
+
+-- Tùy chọn Shader Mode
+local shaderModeFrame = Instance.new("Frame")
+shaderModeFrame.Size = UDim2.new(1, -10, 0, 34)
+shaderModeFrame.Position = UDim2.new(0, 5, 0, 200)
+shaderModeFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+shaderModeFrame.Parent = pageSettings
+Instance.new("UICorner", shaderModeFrame).CornerRadius = UDim.new(0, 8)
+
+local shaderModeLabel = Instance.new("TextLabel")
+shaderModeLabel.Size = UDim2.new(0, 150, 1, 0)
+shaderModeLabel.Position = UDim2.new(0, 10, 0, 0)
+shaderModeLabel.BackgroundTransparency = 1
+shaderModeLabel.Text = "🎨 Shader Style"
+shaderModeLabel.TextColor3 = Color3.fromRGB(210, 210, 225)
+shaderModeLabel.TextSize = 10
+shaderModeLabel.TextXAlignment = Enum.TextXAlignment.Left
+shaderModeLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+shaderModeLabel.Parent = shaderModeFrame
+
+local shaderSwitchBtn = Instance.new("TextButton")
+shaderSwitchBtn.Size = UDim2.new(0, 180, 0, 22)
+shaderSwitchBtn.Position = UDim2.new(1, -190, 0.5, -11)
+shaderSwitchBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+shaderSwitchBtn.Text = settings.ShaderMode
+shaderSwitchBtn.TextColor3 = Color3.fromRGB(255, 200, 220)
+shaderSwitchBtn.TextSize = 9
+shaderSwitchBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+shaderSwitchBtn.Parent = shaderModeFrame
+Instance.new("UICorner", shaderSwitchBtn).CornerRadius = UDim.new(0, 6)
+
+shaderSwitchBtn.MouseButton1Click:Connect(function()
+	if settings.ShaderMode == "Video 1 (Cinematic Blue/Green)" then
+		settings.ShaderMode = "Video 2 (Golden Warm/Contrast)"
+	else
+		settings.ShaderMode = "Video 1 (Cinematic Blue/Green)"
+	end
+	shaderSwitchBtn.Text = settings.ShaderMode
+	if settings.UltraShaderEnabled then
+		applyPCShader(true)
+	end
+end)
+
+createToggle(pageSettings, 240, "🌈 Menu RGB Animation", "MenuRgbEnabled")
+createToggle(pageSettings, 280, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
 
 local disabledNoteLabel = Instance.new("TextLabel")
 disabledNoteLabel.Size = UDim2.new(1, -10, 0, 32)
-disabledNoteLabel.Position = UDim2.new(0, 5, 0, 285)
+disabledNoteLabel.Position = UDim2.new(0, 5, 0, 320)
 disabledNoteLabel.BackgroundTransparency = 1
 disabledNoteLabel.Text = "⚠️ Auto C/Control: Tính năng tạm thời bị vô hiệu hoá"
 disabledNoteLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
@@ -544,7 +651,7 @@ local creLabel = Instance.new("TextLabel")
 creLabel.Size = UDim2.new(1, -10, 1, 0)
 creLabel.Position = UDim2.new(0, 5, 0, 0)
 creLabel.BackgroundTransparency = 1
-creLabel.Text = "GUMMI HUB\nDeveloper: duclinx\nSpecial Thanks for UI & Features Upgrade!"
+creLabel.Text = "GUMMI HUB\nDeveloper: duclinx\nSpecial Thanks for UI Fix & Dual-Video Shader Upgrade!"
 creLabel.TextColor3 = Color3.fromRGB(255, 180, 200)
 creLabel.TextSize = 11
 creLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -560,7 +667,7 @@ minimizeBtn.MouseButton1Click:Connect(function()
 		tabContainer.Visible = false
 		minimizeBtn.Text = "+"
 	else
-		mainFrame:TweenSize(UDim2.new(0, 500, 0, 360), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+		mainFrame:TweenSize(UDim2.new(0, 500, 0, 400), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
 		sidebar.Visible = true
 		tabContainer.Visible = true
 		minimizeBtn.Text = "-"
@@ -675,7 +782,6 @@ RunService.RenderStepped:Connect(function()
 				end
 			end
 			
-			-- Công thức tính tốc độ chuẩn 10 chế độ từ nhẹ (mức 1: ~20) đến cực hạn (mức 10: ~120)
 			if settings.SpeedBoostEnabled then
 				local targetSpeed = 16 + (settings.SpeedLevel * 11)
 				
