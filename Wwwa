@@ -584,7 +584,6 @@ end)
 
 createToggle(pageSettings, 120, "🔓 Bypass Speed (Ép Tốc Độ Hoạt Động)", "BypassSpeedEnabled")
 createToggle(pageSettings, 160, "🌟 PC Shader 4K-8K", "UltraShaderEnabled")
-
 -- Tùy chọn Shader Mode
 local shaderModeFrame = Instance.new("Frame")
 shaderModeFrame.Size = UDim2.new(1, -10, 0, 34)
