@@ -1,6 +1,6 @@
 --!strict
 --[[
-    GUMMI HUB (Ultra Next-Gen 4K-8K PC-Level Shader & Dual Style Shader Selection - Fixed UI Visibility & CoreGui Safety)
+    GUMMI HUB [duclinx] - Evade v8.5.1 Optimized Batch Edition
 --]]
 
 local Players = game:GetService("Players")
@@ -9,6 +9,8 @@ local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
 local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -28,23 +30,30 @@ local settings = {
 	AntiAfkEnabled = true,
 	LockButtons = false,
 	EspPlayersEnabled = false,
+	
 	UltraShaderEnabled = false,
+	ShaderQuality = "Mặc định (Đồ họa thường)", 
 	ShaderMode = "Video 1 (Cinematic Blue/Green)",
+	
+	FovEnabled = false,
+	FovLevel = 90,
+	
+	FixLagEnabled = false,
+	FixLagMode = "Nhẹ (Giảm hiệu ứng)",
 }
 
--- Khắc phục lỗi không hiện menu bằng cách ưu tiên PlayerGui (phòng trường hợp CoreGui bị chặn cấp quyền)
-local successCore, err = pcall(function()
-	if CoreGui:FindFirstChild("GummiHub_Gui") then
-		CoreGui.GummiHub_Gui:Destroy()
+pcall(function()
+	if CoreGui:FindFirstChild("GummiHub_EvadeGui") then
+		CoreGui.GummiHub_EvadeGui:Destroy()
 	end
 end)
 
-if playerGui:FindFirstChild("GummiHub_Gui") then
-	playerGui.GummiHub_Gui:Destroy()
+if playerGui:FindFirstChild("GummiHub_EvadeGui") then
+	playerGui.GummiHub_EvadeGui:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "GummiHub_Gui"
+screenGui.Name = "GummiHub_EvadeGui"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
 screenGui.DisplayOrder = 999999
@@ -57,13 +66,12 @@ if not parentSuccess then
 	screenGui.Parent = playerGui
 end
 
--- Chống AFK
 task.spawn(function()
 	player.Idled:Connect(function()
 		if settings.AntiAfkEnabled then
-			VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+			VirtualUser:Button2Down(Vector2.new(0,0), Camera.CFrame)
 			task.wait(1)
-			VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+			VirtualUser:Button2Up(Vector2.new(0,0), Camera.CFrame)
 		end
 	end)
 end)
@@ -79,7 +87,7 @@ local function updateAfkPlatform(create: boolean)
 			afkPlatform.CanCollide = true
 			afkPlatform.Transparency = 0.3
 			afkPlatform.Color = Color3.fromRGB(45, 45, 60)
-			afkPlatform.Parent = workspace
+			afkPlatform.Parent = Workspace
 		end
 		local char = player.Character
 		if char then
@@ -96,7 +104,6 @@ local function updateAfkPlatform(create: boolean)
 	end
 end
 
--- Hệ thống Shader PC kết hợp 4K-8K và 2 phong cách từ video
 local pcAtmosphere: Atmosphere? = nil
 local pcBloom: BloomEffect? = nil
 local pcSunRays: SunRaysEffect? = nil
@@ -106,110 +113,123 @@ local pcDepthOfField: DepthOfFieldEffect? = nil
 local function applyPCShader(enable: boolean)
 	if enable then
 		pcall(function()
+			if settings.ShaderQuality == "Mặc định (Đồ họa thường)" then
+				if pcAtmosphere then pcAtmosphere:Destroy(); pcAtmosphere = nil end
+				if pcBloom then pcBloom:Destroy(); pcBloom = nil end
+				if pcSunRays then pcSunRays:Destroy(); pcSunRays = nil end
+				if pcColorCorrection then pcColorCorrection:Destroy(); pcColorCorrection = nil end
+				if pcDepthOfField then pcDepthOfField:Destroy(); pcDepthOfField = nil end
+				Lighting.GlobalShadows = true
+				Lighting.Brightness = 2
+				return
+			end
+
 			Lighting.GlobalShadows = true
 			Lighting.Technology = Enum.Technology.Future
-			Lighting.EnvironmentDiffuseScale = 1.8
-			Lighting.EnvironmentSpecularScale = 1.8
+			
+			local is8K = (settings.ShaderQuality == "8K Photorealistic")
+			Lighting.EnvironmentDiffuseScale = is8K and 1.2 or 1.0
+			Lighting.EnvironmentSpecularScale = is8K and 1.2 or 1.0
 			
 			if settings.ShaderMode == "Video 1 (Cinematic Blue/Green)" then
 				Lighting.OutdoorAmbient = Color3.fromRGB(60, 80, 110)
 				Lighting.Ambient = Color3.fromRGB(20, 30, 45)
-				Lighting.Brightness = 2.5
-				Lighting.ClockTime = 13.5
+				Lighting.Brightness = 1.6
+				Lighting.ClockTime = 14.0
 				
 				if not pcAtmosphere then
 					pcAtmosphere = Instance.new("Atmosphere")
 					pcAtmosphere.Name = "GummiHub_PCAtmosphere"
-					pcAtmosphere.Density = 0.35
-					pcAtmosphere.Offset = 0.1
-					pcAtmosphere.Color = Color3.fromRGB(150, 190, 255)
-					pcAtmosphere.Decay = Color3.fromRGB(40, 50, 90)
-					pcAtmosphere.Glare = 0.7
-					pcAtmosphere.Haze = 1.5
 					pcAtmosphere.Parent = Lighting
 				end
+				pcAtmosphere.Density = 0.28
+				pcAtmosphere.Offset = 0.1
+				pcAtmosphere.Color = Color3.fromRGB(150, 190, 255)
+				pcAtmosphere.Decay = Color3.fromRGB(40, 50, 90)
+				pcAtmosphere.Glare = 0.3
+				pcAtmosphere.Haze = 1.0
 				
 				if not pcBloom then
 					pcBloom = Instance.new("BloomEffect")
 					pcBloom.Name = "GummiHub_PCBloom"
-					pcBloom.Intensity = 1.1
-					pcBloom.Size = 45
-					pcBloom.Threshold = 0.75
 					pcBloom.Parent = Lighting
 				end
+				pcBloom.Intensity = 0.35
+				pcBloom.Size = 24
+				pcBloom.Threshold = 0.8
 				
 				if not pcSunRays then
 					pcSunRays = Instance.new("SunRaysEffect")
 					pcSunRays.Name = "GummiHub_PCSunRays"
-					pcSunRays.Intensity = 0.5
-					pcSunRays.Spread = 1
 					pcSunRays.Parent = Lighting
 				end
+				pcSunRays.Intensity = 0.25
+				pcSunRays.Spread = 0.8
 				
 				if not pcColorCorrection then
 					pcColorCorrection = Instance.new("ColorCorrectionEffect")
 					pcColorCorrection.Name = "GummiHub_PCColorCorrection"
-					pcColorCorrection.Brightness = 0.08
-					pcColorCorrection.Contrast = 0.32
-					pcColorCorrection.Saturation = 0.45
-					pcColorCorrection.TintColor = Color3.fromRGB(235, 245, 255)
 					pcColorCorrection.Parent = Lighting
 				end
+				pcColorCorrection.Brightness = 0.02
+				pcColorCorrection.Contrast = 0.2
+				pcColorCorrection.Saturation = 0.35
+				pcColorCorrection.TintColor = Color3.fromRGB(240, 245, 255)
 
 			else
 				Lighting.OutdoorAmbient = Color3.fromRGB(110, 100, 80)
-				Lighting.Ambient = Color3.fromRGB(50, 45, 35)
-				Lighting.Brightness = 3.0
-				Lighting.ClockTime = 15.0
+				Lighting.Ambient = Color3.fromRGB(45, 40, 30)
+				Lighting.Brightness = 1.7
+				Lighting.ClockTime = 15.5
 				
 				if not pcAtmosphere then
 					pcAtmosphere = Instance.new("Atmosphere")
 					pcAtmosphere.Name = "GummiHub_PCAtmosphere"
-					pcAtmosphere.Density = 0.25
-					pcAtmosphere.Offset = 0.2
-					pcAtmosphere.Color = Color3.fromRGB(255, 235, 200)
-					pcAtmosphere.Decay = Color3.fromRGB(90, 70, 50)
-					pcAtmosphere.Glare = 0.8
-					pcAtmosphere.Haze = 1.2
 					pcAtmosphere.Parent = Lighting
 				end
+				pcAtmosphere.Density = 0.22
+				pcAtmosphere.Offset = 0.2
+				pcAtmosphere.Color = Color3.fromRGB(255, 230, 200)
+				pcAtmosphere.Decay = Color3.fromRGB(90, 70, 50)
+				pcAtmosphere.Glare = 0.4
+				pcAtmosphere.Haze = 1.0
 				
 				if not pcBloom then
 					pcBloom = Instance.new("BloomEffect")
 					pcBloom.Name = "GummiHub_PCBloom"
-					pcBloom.Intensity = 0.9
-					pcBloom.Size = 35
-					pcBloom.Threshold = 0.7
 					pcBloom.Parent = Lighting
 				end
+				pcBloom.Intensity = 0.3
+				pcBloom.Size = 24
+				pcBloom.Threshold = 0.8
 				
 				if not pcSunRays then
 					pcSunRays = Instance.new("SunRaysEffect")
 					pcSunRays.Name = "GummiHub_PCSunRays"
-					pcSunRays.Intensity = 0.6
-					pcSunRays.Spread = 0.9
 					pcSunRays.Parent = Lighting
 				end
+				pcSunRays.Intensity = 0.3
+				pcSunRays.Spread = 0.8
 				
 				if not pcColorCorrection then
 					pcColorCorrection = Instance.new("ColorCorrectionEffect")
 					pcColorCorrection.Name = "GummiHub_PCColorCorrection"
-					pcColorCorrection.Brightness = 0.15
-					pcColorCorrection.Contrast = 0.38
-					pcColorCorrection.Saturation = 0.5
-					pcColorCorrection.TintColor = Color3.fromRGB(255, 242, 220)
 					pcColorCorrection.Parent = Lighting
 				end
+				pcColorCorrection.Brightness = 0.04
+				pcColorCorrection.Contrast = 0.22
+				pcColorCorrection.Saturation = 0.4
+				pcColorCorrection.TintColor = Color3.fromRGB(255, 242, 220)
 			end
 
 			if not pcDepthOfField then
 				pcDepthOfField = Instance.new("DepthOfFieldEffect")
 				pcDepthOfField.Name = "GummiHub_PCDepthOfField"
-				pcDepthOfField.FarIntensity = 0.25
-				pcDepthOfField.FocusDistance = 35
-				pcDepthOfField.InFocusRadius = 20
 				pcDepthOfField.Parent = Lighting
 			end
+			pcDepthOfField.FarIntensity = 0.15
+			pcDepthOfField.FocusDistance = 35
+			pcDepthOfField.InFocusRadius = 20
 		end)
 	else
 		pcall(function()
@@ -218,6 +238,92 @@ local function applyPCShader(enable: boolean)
 			if pcSunRays then pcSunRays:Destroy(); pcSunRays = nil end
 			if pcColorCorrection then pcColorCorrection:Destroy(); pcColorCorrection = nil end
 			if pcDepthOfField then pcDepthOfField:Destroy(); pcDepthOfField = nil end
+		end)
+	end
+end
+
+-- Cơ chế Fix Lag Quét Theo Đợt (Batch Processing) Tránh Khựng Lag
+local fixLagLoopThread = nil
+
+local function applyFixLag(enable: boolean)
+	if enable then
+		pcall(function()
+			Lighting.GlobalShadows = false
+			Lighting.FogEnd = 9000
+			for _, v in ipairs(Lighting:GetChildren()) do
+				if v:IsA("PostEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then
+					v.Enabled = false
+				end
+			end
+
+			local function processBatch()
+				local mode = settings.FixLagMode
+				local descendants = Workspace:GetDescendants()
+				local batchSize = 150 -- Xử lý mỗi đợt 150 vật thể rồi nhường frame cho game chạy mượt
+				
+				for i = 1, #descendants, batchSize do
+					if not settings.FixLagEnabled then break end
+					for j = i, math.min(i + batchSize - 1, #descendants) do
+						local obj = descendants[j]
+						if obj and obj.Parent then
+							if mode == "Nhẹ (Giảm hiệu ứng)" then
+								if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Beam") then
+									obj.Enabled = false
+								end
+							elseif mode == "Trung bình (Xóa cỏ/lá)" then
+								if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Beam") then
+									obj.Enabled = false
+								elseif obj:IsA("BasePart") then
+									local name = string.lower(obj.Name)
+									if string.find(name, "grass") or string.find(name, "leaf") or string.find(name, "plant") or string.find(name, "flower") or string.find(name, "bush") then
+										obj:Destroy()
+									end
+								end
+							elseif mode == "Cực hạn (Xóa toàn bộ Texture & Tài nguyên)" then
+								if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Beam") or obj:IsA("Texture") or obj:IsA("Decal") then
+									obj:Destroy()
+								elseif obj:IsA("BasePart") then
+									local name = string.lower(obj.Name)
+									if string.find(name, "grass") or string.find(name, "leaf") or string.find(name, "plant") or string.find(name, "tree") or string.find(name, "prop") or string.find(name, "debris") then
+										obj:Destroy()
+									else
+										obj.Material = Enum.Material.SmoothPlastic
+										obj.Reflectance = 0
+									end
+								end
+							end
+						end
+					end
+					task.wait() -- Nghỉ 1 nhịp giữa các đợt để không bao giờ bị đứng hình
+				end
+			end
+
+			-- Chạy đợt quét đầu tiên
+			task.spawn(processBatch)
+
+			-- Định kỳ cứ mỗi 10 giây sẽ quét lại theo đợt để dọn dẹp map mới nạp
+			if not fixLagLoopThread then
+				fixLagLoopThread = task.spawn(function()
+					while true do
+						task.wait(10)
+						if not settings.FixLagEnabled then break end
+						processBatch()
+					end
+				end)
+			end
+		end)
+	else
+		pcall(function()
+			if fixLagLoopThread then
+				task.cancel(fixLagLoopThread)
+				fixLagLoopThread = nil
+			end
+			Lighting.GlobalShadows = true
+			for _, v in ipairs(Lighting:GetChildren()) do
+				if v:IsA("PostEffect") or v:IsA("Atmosphere") or v:IsA("Sky") then
+					v.Enabled = true
+				end
+			end
 		end)
 	end
 end
@@ -307,7 +413,6 @@ pcall(function()
 end)
 local avatarImageContent = Players:GetUserThumbnailAsync(targetUserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
 
--- NÚT BẬT/TẮT MENU CHÍNH
 local toggleBtn = Instance.new("ImageButton")
 toggleBtn.Size = UDim2.new(0, 50, 0, 50)
 toggleBtn.Position = UDim2.new(0, 20, 0, 20)
@@ -320,10 +425,9 @@ tStroke.Thickness = 2.5
 tStroke.Color = Color3.fromRGB(255, 150, 180)
 makeDraggable(toggleBtn)
 
--- MENU CHÍNH
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 500, 0, 400)
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -200)
+mainFrame.Size = UDim2.new(0, 500, 0, 420)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -210)
 mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 mainFrame.BackgroundTransparency = 0.05
 mainFrame.ClipsDescendants = true
@@ -334,6 +438,16 @@ local mStroke = Instance.new("UIStroke", mainFrame)
 mStroke.Thickness = 2
 mStroke.Color = Color3.fromRGB(60, 60, 85)
 
+local bgImage = Instance.new("ImageLabel")
+bgImage.Name = "BackgroundImage"
+bgImage.Size = UDim2.new(1, 0, 1, 0)
+bgImage.BackgroundTransparency = 1
+bgImage.Image = "rbxassetid://11902680347"
+bgImage.ScaleType = Enum.ScaleType.Crop
+bgImage.ImageTransparency = 0.25
+bgImage.ZIndex = 0
+bgImage.Parent = mainFrame
+
 toggleBtn.MouseButton1Click:Connect(function()
 	settings.MenuVisible = not settings.MenuVisible
 	mainFrame.Visible = settings.MenuVisible
@@ -342,6 +456,7 @@ end)
 local titleBar = Instance.new("Frame")
 titleBar.Size = UDim2.new(1, 0, 0, 35)
 titleBar.BackgroundTransparency = 1
+titleBar.ZIndex = 2
 titleBar.Parent = mainFrame
 makeDraggable(mainFrame)
 
@@ -349,9 +464,10 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(1, -100, 1, 0)
 titleText.Position = UDim2.new(0, 12, 0, 0)
 titleText.BackgroundTransparency = 1
-titleText.Text = "GUMMI HUB [duclinx]"
+titleText.ZIndex = 2
+titleText.Text = "GUMMI HUB [duclinx] - Evade v8.5.1"
 titleText.TextColor3 = Color3.fromRGB(255, 180, 200)
-titleText.TextSize = 12
+titleText.TextSize = 11
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
 titleText.Parent = titleBar
@@ -360,6 +476,7 @@ local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 26, 0, 26)
 minimizeBtn.Position = UDim2.new(1, -65, 0.5, -13)
 minimizeBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+minimizeBtn.ZIndex = 2
 minimizeBtn.Text = "-"
 minimizeBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
 minimizeBtn.TextSize = 12
@@ -370,6 +487,7 @@ local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 26, 0, 26)
 closeBtn.Position = UDim2.new(1, -33, 0.5, -13)
 closeBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+closeBtn.ZIndex = 2
 closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.TextSize = 10
@@ -384,20 +502,23 @@ local sidebar = Instance.new("Frame")
 sidebar.Size = UDim2.new(0, 130, 1, -45)
 sidebar.Position = UDim2.new(0, 8, 0, 40)
 sidebar.BackgroundTransparency = 1
+sidebar.ZIndex = 2
 sidebar.Parent = mainFrame
 
 local tabContainer = Instance.new("Frame")
 tabContainer.Size = UDim2.new(1, -140, 1, -45)
 tabContainer.Position = UDim2.new(0, 138, 0, 40)
 tabContainer.BackgroundTransparency = 1
+tabContainer.ZIndex = 2
 tabContainer.Parent = mainFrame
 
 local function createTabPage()
 	local page = Instance.new("ScrollingFrame")
 	page.Size = UDim2.new(1, 0, 1, 0)
 	page.BackgroundTransparency = 1
-	page.CanvasSize = UDim2.new(0, 0, 0, 580)
+	page.CanvasSize = UDim2.new(0, 0, 0, 720)
 	page.ScrollBarThickness = 3
+	page.ZIndex = 2
 	page.Visible = false
 	page.Parent = tabContainer
 	return page
@@ -414,6 +535,7 @@ local function createTabButton(posY, text, targetPage)
 	btn.Size = UDim2.new(1, 0, 0, 36)
 	btn.Position = UDim2.new(0, 0, 0, posY)
 	btn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	btn.ZIndex = 2
 	btn.Text = text
 	btn.TextColor3 = Color3.fromRGB(210, 210, 225)
 	btn.TextSize = 11
@@ -433,7 +555,6 @@ createTabButton(0, "⚙️ Settings", pageSettings)
 createTabButton(45, "👥 Players", pagePlayers)
 createTabButton(90, "📜 Cre", pageCre)
 
--- Nút Auto Jump Nổi
 local jumpFloatingBtn = Instance.new("TextButton")
 jumpFloatingBtn.Size = UDim2.new(0, 130, 0, 40)
 jumpFloatingBtn.Position = UDim2.new(0.75, 0, 0.35, 0)
@@ -466,6 +587,8 @@ local function createToggle(parent, posY, text, stateVar)
 	frame.Size = UDim2.new(1, -10, 0, 34)
 	frame.Position = UDim2.new(0, 5, 0, posY)
 	frame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+	frame.BackgroundTransparency = 0.2
+	frame.ZIndex = 2
 	frame.Parent = parent
 	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 8)
 	
@@ -473,6 +596,7 @@ local function createToggle(parent, posY, text, stateVar)
 	label.Size = UDim2.new(0, 190, 1, 0)
 	label.Position = UDim2.new(0, 10, 0, 0)
 	label.BackgroundTransparency = 1
+	label.ZIndex = 2
 	label.Text = text
 	label.TextColor3 = Color3.fromRGB(210, 210, 225)
 	label.TextSize = 10
@@ -484,6 +608,7 @@ local function createToggle(parent, posY, text, stateVar)
 	btn.Size = UDim2.new(0, 44, 0, 22)
 	btn.Position = UDim2.new(1, -52, 0.5, -11)
 	btn.BackgroundColor3 = settings[stateVar] and Color3.fromRGB(40, 180, 100) or Color3.fromRGB(45, 45, 55)
+	btn.ZIndex = 2
 	btn.Text = ""
 	btn.Parent = frame
 	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
@@ -492,6 +617,7 @@ local function createToggle(parent, posY, text, stateVar)
 	indicator.Size = UDim2.new(0, 14, 0, 14)
 	indicator.Position = settings[stateVar] and UDim2.new(1, -18, 0, 4) or UDim2.new(0, 4, 0, 4)
 	indicator.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+	indicator.ZIndex = 2
 	indicator.Parent = btn
 	Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
 
@@ -508,6 +634,9 @@ local function createToggle(parent, posY, text, stateVar)
 		
 		if stateVar == "UltraShaderEnabled" then
 			applyPCShader(val)
+		end
+		if stateVar == "FixLagEnabled" then
+			applyFixLag(val)
 		end
 		if stateVar == "EspPlayersEnabled" and not val then
 			updateEspPlayers()
@@ -527,11 +656,12 @@ end
 createToggle(pageSettings, 0, "⚡ Auto Jump", "AutoJumpEnabled")
 createToggle(pageSettings, 40, "🏃‍♂️ Speed Boost (Chạy Nhanh)", "SpeedBoostEnabled")
 
--- Thanh điều chỉnh 10 mức Speed Level
 local speedLevelFrame = Instance.new("Frame")
 speedLevelFrame.Size = UDim2.new(1, -10, 0, 34)
 speedLevelFrame.Position = UDim2.new(0, 5, 0, 80)
 speedLevelFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+speedLevelFrame.BackgroundTransparency = 0.2
+speedLevelFrame.ZIndex = 2
 speedLevelFrame.Parent = pageSettings
 Instance.new("UICorner", speedLevelFrame).CornerRadius = UDim.new(0, 8)
 
@@ -539,6 +669,7 @@ local speedLabel = Instance.new("TextLabel")
 speedLabel.Size = UDim2.new(0, 180, 1, 0)
 speedLabel.Position = UDim2.new(0, 10, 0, 0)
 speedLabel.BackgroundTransparency = 1
+speedLabel.ZIndex = 2
 speedLabel.Text = "⚙️ Speed Level: Mức " .. tostring(settings.SpeedLevel)
 speedLabel.TextColor3 = Color3.fromRGB(210, 210, 225)
 speedLabel.TextSize = 10
@@ -550,6 +681,7 @@ local subSpeedBtn = Instance.new("TextButton")
 subSpeedBtn.Size = UDim2.new(0, 28, 0, 22)
 subSpeedBtn.Position = UDim2.new(1, -74, 0.5, -11)
 subSpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+subSpeedBtn.ZIndex = 2
 subSpeedBtn.Text = "-"
 subSpeedBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
 subSpeedBtn.TextSize = 12
@@ -561,6 +693,7 @@ local addSpeedBtn = Instance.new("TextButton")
 addSpeedBtn.Size = UDim2.new(0, 28, 0, 22)
 addSpeedBtn.Position = UDim2.new(1, -40, 0.5, -11)
 addSpeedBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+addSpeedBtn.ZIndex = 2
 addSpeedBtn.Text = "+"
 addSpeedBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
 addSpeedBtn.TextSize = 12
@@ -582,13 +715,62 @@ addSpeedBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
-createToggle(pageSettings, 120, "🔓 Bypass Speed (Ép Tốc Độ Hoạt Động)", "BypassSpeedEnabled")
+createToggle(pageSettings, 120, "🔓 Bypass Speed", "BypassSpeedEnabled")
 createToggle(pageSettings, 160, "🌟 PC Shader 4K-8K", "UltraShaderEnabled")
--- Tùy chọn Shader Mode
+
+local shaderQualityFrame = Instance.new("Frame")
+shaderQualityFrame.Size = UDim2.new(1, -10, 0, 34)
+shaderQualityFrame.Position = UDim2.new(0, 5, 0, 200)
+shaderQualityFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+shaderQualityFrame.BackgroundTransparency = 0.2
+shaderQualityFrame.ZIndex = 2
+shaderQualityFrame.Parent = pageSettings
+Instance.new("UICorner", shaderQualityFrame).CornerRadius = UDim.new(0, 8)
+
+local shaderQualityLabel = Instance.new("TextLabel")
+shaderQualityLabel.Size = UDim2.new(0, 150, 1, 0)
+shaderQualityLabel.Position = UDim2.new(0, 10, 0, 0)
+shaderQualityLabel.BackgroundTransparency = 1
+shaderQualityLabel.ZIndex = 2
+shaderQualityLabel.Text = "💎 Chất Lượng Đồ Họa"
+shaderQualityLabel.TextColor3 = Color3.fromRGB(210, 210, 225)
+shaderQualityLabel.TextSize = 10
+shaderQualityLabel.TextXAlignment = Enum.TextXAlignment.Left
+shaderQualityLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+shaderQualityLabel.Parent = shaderQualityFrame
+
+local shaderQualityBtn = Instance.new("TextButton")
+shaderQualityBtn.Size = UDim2.new(0, 180, 0, 22)
+shaderQualityBtn.Position = UDim2.new(1, -190, 0.5, -11)
+shaderQualityBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+shaderQualityBtn.ZIndex = 2
+shaderQualityBtn.Text = settings.ShaderQuality
+shaderQualityBtn.TextColor3 = Color3.fromRGB(255, 220, 150)
+shaderQualityBtn.TextSize = 8
+shaderQualityBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+shaderQualityBtn.Parent = shaderQualityFrame
+Instance.new("UICorner", shaderQualityBtn).CornerRadius = UDim.new(0, 6)
+
+shaderQualityBtn.MouseButton1Click:Connect(function()
+	if settings.ShaderQuality == "Mặc định (Đồ họa thường)" then
+		settings.ShaderQuality = "4K Ultra"
+	elseif settings.ShaderQuality == "4K Ultra" then
+		settings.ShaderQuality = "8K Photorealistic"
+	else
+		settings.ShaderQuality = "Mặc định (Đồ họa thường)"
+	end
+	shaderQualityBtn.Text = settings.ShaderQuality
+	if settings.UltraShaderEnabled then
+		applyPCShader(true)
+	end
+end)
+
 local shaderModeFrame = Instance.new("Frame")
 shaderModeFrame.Size = UDim2.new(1, -10, 0, 34)
-shaderModeFrame.Position = UDim2.new(0, 5, 0, 200)
+shaderModeFrame.Position = UDim2.new(0, 5, 0, 240)
 shaderModeFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+shaderModeFrame.BackgroundTransparency = 0.2
+shaderModeFrame.ZIndex = 2
 shaderModeFrame.Parent = pageSettings
 Instance.new("UICorner", shaderModeFrame).CornerRadius = UDim.new(0, 8)
 
@@ -596,6 +778,7 @@ local shaderModeLabel = Instance.new("TextLabel")
 shaderModeLabel.Size = UDim2.new(0, 150, 1, 0)
 shaderModeLabel.Position = UDim2.new(0, 10, 0, 0)
 shaderModeLabel.BackgroundTransparency = 1
+shaderModeLabel.ZIndex = 2
 shaderModeLabel.Text = "🎨 Shader Style"
 shaderModeLabel.TextColor3 = Color3.fromRGB(210, 210, 225)
 shaderModeLabel.TextSize = 10
@@ -607,6 +790,7 @@ local shaderSwitchBtn = Instance.new("TextButton")
 shaderSwitchBtn.Size = UDim2.new(0, 180, 0, 22)
 shaderSwitchBtn.Position = UDim2.new(1, -190, 0.5, -11)
 shaderSwitchBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+shaderSwitchBtn.ZIndex = 2
 shaderSwitchBtn.Text = settings.ShaderMode
 shaderSwitchBtn.TextColor3 = Color3.fromRGB(255, 200, 220)
 shaderSwitchBtn.TextSize = 9
@@ -626,31 +810,83 @@ shaderSwitchBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
-createToggle(pageSettings, 240, "🌈 Menu RGB Animation", "MenuRgbEnabled")
-createToggle(pageSettings, 280, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
+createToggle(pageSettings, 280, "🌈 Menu RGB Animation", "MenuRgbEnabled")
+createToggle(pageSettings, 320, "🛡️ Anti-AFK (Chống Kick)", "AntiAfkEnabled")
+createToggle(pageSettings, 360, "⚡ Fix Lag & Tối Ưu Hóa", "FixLagEnabled")
 
-local disabledNoteLabel = Instance.new("TextLabel")
-disabledNoteLabel.Size = UDim2.new(1, -10, 0, 32)
-disabledNoteLabel.Position = UDim2.new(0, 5, 0, 320)
-disabledNoteLabel.BackgroundTransparency = 1
-disabledNoteLabel.Text = "⚠️ Auto C/Control: Tính năng tạm thời bị vô hiệu hoá"
-disabledNoteLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-disabledNoteLabel.TextSize = 9
-disabledNoteLabel.TextXAlignment = Enum.TextXAlignment.Left
-disabledNoteLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
-disabledNoteLabel.Parent = pageSettings
+local fixLagModeFrame = Instance.new("Frame")
+fixLagModeFrame.Size = UDim2.new(1, -10, 0, 34)
+fixLagModeFrame.Position = UDim2.new(0, 5, 0, 400)
+fixLagModeFrame.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+fixLagModeFrame.BackgroundTransparency = 0.2
+fixLagModeFrame.ZIndex = 2
+fixLagModeFrame.Parent = pageSettings
+Instance.new("UICorner", fixLagModeFrame).CornerRadius = UDim.new(0, 8)
 
-createToggle(pagePlayers, 0, "👁️ ESP Players (Highlight)", "EspPlayersEnabled")
+local fixLagModeLabel = Instance.new("TextLabel")
+fixLagModeLabel.Size = UDim2.new(0, 140, 1, 0)
+fixLagModeLabel.Position = UDim2.new(0, 10, 0, 0)
+fixLagModeLabel.BackgroundTransparency = 1
+fixLagModeLabel.ZIndex = 2
+fixLagModeLabel.Text = "🛠️ Mức Độ Fix Lag"
+fixLagModeLabel.TextColor3 = Color3.fromRGB(210, 210, 225)
+fixLagModeLabel.TextSize = 10
+fixLagModeLabel.TextXAlignment = Enum.TextXAlignment.Left
+fixLagModeLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+fixLagModeLabel.Parent = fixLagModeFrame
+
+local fixLagModeBtn = Instance.new("TextButton")
+fixLagModeBtn.Size = UDim2.new(0, 190, 0, 22)
+fixLagModeBtn.Position = UDim2.new(1, -200, 0.5, -11)
+fixLagModeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+fixLagModeBtn.ZIndex = 2
+fixLagModeBtn.Text = settings.FixLagMode
+fixLagModeBtn.TextColor3 = Color3.fromRGB(150, 255, 200)
+fixLagModeBtn.TextSize = 8
+fixLagModeBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+fixLagModeBtn.Parent = fixLagModeFrame
+Instance.new("UICorner", fixLagModeBtn).CornerRadius = UDim.new(0, 6)
+
+fixLagModeBtn.MouseButton1Click:Connect(function()
+	if settings.FixLagMode == "Nhẹ (Giảm hiệu ứng)" then
+		settings.FixLagMode = "Trung bình (Xóa cỏ/lá)"
+	elseif settings.FixLagMode == "Trung bình (Xóa cỏ/lá)" then
+		settings.FixLagMode = "Cực hạn (Xóa toàn bộ Texture & Tài nguyên)"
+	else
+		settings.FixLagMode = "Nhẹ (Giảm hiệu ứng)"
+	end
+	fixLagModeBtn.Text = settings.FixLagMode
+	if settings.FixLagEnabled then
+		applyFixLag(true)
+	end
+end)
+
+local fovNoteLabel = Instance.new("TextLabel")
+fovNoteLabel.Size = UDim2.new(1, -10, 0, 60)
+fovNoteLabel.Position = UDim2.new(0, 5, 0, 440)
+fovNoteLabel.BackgroundTransparency = 1
+fovNoteLabel.ZIndex = 2
+fovNoteLabel.Text = "⚠️ GHI CHÚ FOV: FOV hiện không hoạt động do máy chủ hệ thống Evade đang chặn các tập tin và script gian lận."
+fovNoteLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+fovNoteLabel.TextSize = 9
+fovNoteLabel.TextWrapped = true
+fovNoteLabel.TextXAlignment = Enum.TextXAlignment.Left
+fovNoteLabel.TextYAlignment = Enum.TextYAlignment.Top
+fovNoteLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+fovNoteLabel.Parent = pageSettings
+
+createToggle(pagePlayers, 0, "👁️ ESP Players", "EspPlayersEnabled")
 createToggle(pagePlayers, 40, "🔒 Khóa Vị Trí Nút", "LockButtons")
 createToggle(pagePlayers, 80, "⚡ Lag Switch Khựng Màn Hình", "LagSwitchActive")
-createToggle(pagePlayers, 120, "🧲 Teleport Tới Bubbles", "AutoCollectBubbles")
+createToggle(pagePlayers, 120, "🧲 Teleport Tới Items", "AutoCollectBubbles")
 createToggle(pagePlayers, 160, "🚀 AFK Farm 1500m + Khối", "AfkFarmSky")
 
 local creLabel = Instance.new("TextLabel")
 creLabel.Size = UDim2.new(1, -10, 1, 0)
 creLabel.Position = UDim2.new(0, 5, 0, 0)
 creLabel.BackgroundTransparency = 1
-creLabel.Text = "GUMMI HUB\nDeveloper: duclinx\nSpecial Thanks for UI Fix & Dual-Video Shader Upgrade!"
+creLabel.ZIndex = 2
+creLabel.Text = "GUMMI HUB [Evade v8.5.1]\nDeveloper: duclinx\nBản Hoàn Chỉnh: Đã Fix Shader, Quét Fix Lag Theo Đợt & Tích Hợp Nền!"
 creLabel.TextColor3 = Color3.fromRGB(255, 180, 200)
 creLabel.TextSize = 11
 creLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -666,7 +902,7 @@ minimizeBtn.MouseButton1Click:Connect(function()
 		tabContainer.Visible = false
 		minimizeBtn.Text = "+"
 	else
-		mainFrame:TweenSize(UDim2.new(0, 500, 0, 400), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
+		mainFrame:TweenSize(UDim2.new(0, 500, 0, 420), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 0.2, true)
 		sidebar.Visible = true
 		tabContainer.Visible = true
 		minimizeBtn.Text = "-"
@@ -711,8 +947,8 @@ lagSwitchFloatingBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
-local processedBubbles = {}
-local lastBubbleCheck = 0
+local processedItems = {}
+local lastItemCheck = 0
 
 RunService.RenderStepped:Connect(function()
 	lagSwitchFloatingBtn.Visible = settings.LagSwitchActive
@@ -731,6 +967,8 @@ RunService.RenderStepped:Connect(function()
 		updateEspPlayers()
 	end
 
+	settings.FovEnabled = false
+
 	if settings.AfkFarmSky then
 		updateAfkPlatform(true)
 		local char = player.Character
@@ -744,19 +982,19 @@ RunService.RenderStepped:Connect(function()
 	else
 		updateAfkPlatform(false)
 		
-		if settings.AutoCollectBubbles and (tick() - lastBubbleCheck >= 0.8) then
-			lastBubbleCheck = tick()
+		if settings.AutoCollectBubbles and (tick() - lastItemCheck >= 0.8) then
+			lastItemCheck = tick()
 			task.spawn(function()
 				local c = player.Character
 				if c then
 					local r = c:FindFirstChild("HumanoidRootPart")
 					if r then
-						for _, obj in ipairs(workspace:GetDescendants()) do
+						for _, obj in ipairs(Workspace:GetDescendants()) do
 							if obj:IsA("BasePart") then
 								local nLower = string.lower(obj.Name)
-								if string.find(nLower, "bubble") or string.find(nLower, "bong") or string.find(nLower, "item") or string.find(nLower, "pickup") or string.find(nLower, "coin") then
-									if not processedBubbles[obj] then
-										processedBubbles[obj] = true
+								if string.find(nLower, "downed") or string.find(nLower, "item") or string.find(nLower, "pickup") or string.find(nLower, "ticket") then
+									if not processedItems[obj] then
+                                        processedItems[obj] = true
 										r.CFrame = obj.CFrame + Vector3.new(0, 2, 0)
 										r.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 										break
