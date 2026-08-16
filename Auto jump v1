@@ -1,0 +1,250 @@
+--!strict
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+
+local settings = {
+	MenuVisible = true,
+	AutoJumpEnabled = true,   -- Mặc định bật hiển thị nút nhảy luôn cho dễ thấy
+	ButtonsLocked = false,    -- Khóa vị trí chống trượt khi chơi nhiều ngón
+}
+
+-- Xóa UI cũ tránh trùng lặp
+if CoreGui:FindFirstChild("SimpleAutoJump_Gui") then
+	CoreGui.SimpleAutoJump_Gui:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SimpleAutoJump_Gui"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- 1. NÚT MENU CHÍNH (Đã dịch xuống dưới góc trái một đoạn để không bị che khu vực chat Roblox)
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 130, 0, 36)
+toggleBtn.Position = UDim2.new(0, 20, 0, 80) -- Đặt ở y = 80 tránh dính thanh menu trên cùng
+toggleBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+toggleBtn.TextColor3 = Color3.fromRGB(220, 220, 225)
+toggleBtn.TextSize = 11
+toggleBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+toggleBtn.Text = "MENU SCRIPT"
+toggleBtn.Parent = screenGui
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(0, 8)
+local tStroke = Instance.new("UIStroke", toggleBtn)
+tStroke.Thickness = 1.5
+tStroke.Color = Color3.fromRGB(70, 70, 95)
+
+local toggleInput: InputObject? = nil
+local tDragStart = Vector2.zero
+local tStartPos = UDim2.new()
+local tMoved = false
+
+toggleBtn.InputBegan:Connect(function(input)
+	if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not toggleInput then
+		toggleInput = input
+		tDragStart = input.Position
+		tStartPos = toggleBtn.Position
+		tMoved = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == toggleInput and not settings.ButtonsLocked then
+		local delta = input.Position - tDragStart
+		if delta.Magnitude > 5 then tMoved = true end
+		toggleBtn.Position = UDim2.new(tStartPos.X.Scale, tStartPos.X.Offset + delta.X, tStartPos.Y.Scale, tStartPos.Y.Offset + delta.Y)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input == toggleInput then
+		if not tMoved then
+			settings.MenuVisible = not settings.MenuVisible
+		end
+		toggleInput = nil
+	end
+end)
+
+-- 2. BẢNG MENU CHÍNH
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 280, 0, 215)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -107)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+mainFrame.BackgroundTransparency = 0.05
+mainFrame.Parent = screenGui
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
+local mStroke = Instance.new("UIStroke", mainFrame)
+mStroke.Thickness = 1.5
+mStroke.Color = Color3.fromRGB(60, 60, 80)
+
+local titleBar = Instance.new("TextLabel")
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundTransparency = 1
+titleBar.Text = "  AUTO JUMP MENU"
+titleBar.TextColor3 = Color3.fromRGB(220, 220, 230)
+titleBar.TextSize = 11
+titleBar.TextXAlignment = Enum.TextXAlignment.Left
+titleBar.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+titleBar.Parent = mainFrame
+
+local menuInput: InputObject? = nil
+local mDragStart = Vector2.zero
+local mStartPos = UDim2.new()
+
+titleBar.InputBegan:Connect(function(input)
+	if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not menuInput then
+		menuInput = input
+		mDragStart = input.Position
+		mStartPos = mainFrame.Position
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == menuInput and not settings.ButtonsLocked then
+		local delta = input.Position - mDragStart
+		mainFrame.Position = UDim2.new(mStartPos.X.Scale, mStartPos.X.Offset + delta.X, mStartPos.Y.Scale, mStartPos.Y.Offset + delta.Y)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input == menuInput then menuInput = nil end
+end)
+
+local function createMenuOption(posY, text, stateVar)
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, -20, 0, 45)
+	row.Position = UDim2.new(0, 10, 0, posY)
+	row.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+	row.Parent = mainFrame
+	Instance.new("UICorner", row).CornerRadius = UDim.new(0, 8)
+
+	local rowLabel = Instance.new("TextLabel")
+	rowLabel.Size = UDim2.new(0, 160, 1, 0)
+	rowLabel.Position = UDim2.new(0, 12, 0, 0)
+	rowLabel.BackgroundTransparency = 1
+	rowLabel.Text = text
+	rowLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+	rowLabel.TextSize = 11
+	rowLabel.TextXAlignment = Enum.TextXAlignment.Left
+	rowLabel.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+	rowLabel.Parent = row
+
+	local checkBtn = Instance.new("TextButton")
+	checkBtn.Size = UDim2.new(0, 46, 0, 24)
+	checkBtn.Position = UDim2.new(1, -56, 0.5, -12)
+	-- Mặc định nút Show Jump đang bật sẵn màu xanh
+	checkBtn.BackgroundColor3 = (stateVar == "AutoJumpEnabled") and Color3.fromRGB(40, 160, 90) or Color3.fromRGB(40, 40, 50)
+	checkBtn.Text = ""
+	checkBtn.Parent = row
+	Instance.new("UICorner", checkBtn).CornerRadius = UDim.new(1, 0)
+
+	local indicator = Instance.new("Frame")
+	indicator.Size = UDim2.new(0, 16, 0, 16)
+	indicator.Position = (stateVar == "AutoJumpEnabled") and UDim2.new(1, -20, 0, 4) or UDim2.new(0, 4, 0, 4)
+	indicator.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+	indicator.Parent = checkBtn
+	Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
+
+	checkBtn.MouseButton1Click:Connect(function()
+		settings[stateVar] = not settings[stateVar]
+		local val = settings[stateVar]
+		if val then
+			checkBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
+			indicator.Position = UDim2.new(1, -20, 0, 4)
+		else
+			checkBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+			indicator.Position = UDim2.new(0, 4, 0, 4)
+		end
+		
+		if stateVar == "AutoJumpEnabled" then
+			jumpFloatingBtn.Visible = val
+			if not val then
+				jumpFloatingBtn:SetAttribute("IsActive", false)
+				jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+				jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+				jumpFloatingBtn.Text = "AUTO JUMP: OFF"
+			end
+		end
+	end)
+end
+
+createMenuOption(42, "Show Jump Button", "AutoJumpEnabled")
+createMenuOption(96, "🔒 Lock Button Positions", "ButtonsLocked")
+
+-- 3. NÚT NHẢY NỔI (Đưa ra giữa bên phải màn hình để dễ nhìn thấy ngay)
+local jumpFloatingBtn = Instance.new("TextButton")
+jumpFloatingBtn.Size = UDim2.new(0, 150, 0, 48)
+jumpFloatingBtn.Position = UDim2.new(0.65, 0, 0.45, 0)
+jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+jumpFloatingBtn.Text = "AUTO JUMP: OFF"
+jumpFloatingBtn.TextSize = 11
+jumpFloatingBtn.FontFace = Font.new("rbxasset://fonts/families/GothamBold.json")
+jumpFloatingBtn.Visible = true -- Hiện sẵn luôn
+jumpFloatingBtn.ZIndex = 15
+jumpFloatingBtn.Parent = screenGui
+Instance.new("UICorner", jumpFloatingBtn).CornerRadius = UDim.new(0, 24)
+local jStroke = Instance.new("UIStroke", jumpFloatingBtn)
+jStroke.Thickness = 1.5
+jStroke.Color = Color3.fromRGB(100, 100, 120)
+
+local jInput: InputObject? = nil
+local jDragStart = Vector2.zero
+local jStartPos = UDim2.new()
+local jMoved = false
+
+jumpFloatingBtn.InputBegan:Connect(function(input)
+	if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and not jInput then
+		jInput = input
+		jDragStart = input.Position
+		jStartPos = jumpFloatingBtn.Position
+		jMoved = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == jInput and not settings.ButtonsLocked then
+		local delta = input.Position - jDragStart
+		if delta.Magnitude > 6 then jMoved = true end
+		jumpFloatingBtn.Position = UDim2.new(jStartPos.X.Scale, jStartPos.X.Offset + delta.X, jStartPos.Y.Scale, jStartPos.Y.Offset + delta.Y)
+	end
+end)
+
+jumpFloatingBtn.InputEnded:Connect(function(input)
+	if input == jInput then
+		if not jMoved then
+			local activeState = not jumpFloatingBtn:GetAttribute("IsActive")
+			jumpFloatingBtn:SetAttribute("IsActive", activeState)
+			if activeState then
+				jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 90)
+				jumpFloatingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+				jumpFloatingBtn.Text = "AUTO JUMP: ON"
+			else
+				jumpFloatingBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+				jumpFloatingBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+				jumpFloatingBtn.Text = "AUTO JUMP: OFF"
+			end
+		end
+		jInput = nil
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	mainFrame.Visible = settings.MenuVisible
+	
+	if settings.AutoJumpEnabled and jumpFloatingBtn:GetAttribute("IsActive") then
+		pcall(function()
+			local char = player.Character
+			if char then
+				local humanoid = char:FindFirstChildOfClass("Humanoid")
+				if humanoid and humanoid.FloorMaterial ~= Enum.Material.Air then
+					humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+				end
+			end
+		end)
+	end
+end)
